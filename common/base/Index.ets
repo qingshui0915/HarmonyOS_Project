@@ -10,3 +10,4 @@ export { DBUtil } from './src/main/ets/utils/DBUtil';
 export { Api } from './src/main/ets/api/Api';
 export { showToast } from './src/main/ets/utils/ToastUtil'
 export { UserData } from './src/main/ets/viewmodel/UserData'
+export { regPermissionsFromUser } from './src/main/ets/utils/PermissionsUtils'

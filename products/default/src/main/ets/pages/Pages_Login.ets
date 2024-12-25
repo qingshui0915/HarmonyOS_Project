@@ -28,7 +28,6 @@ export struct Pages_Login {
       showToast("登录成功");
       this.userData =  res.data as UserData
       AppStorage.setOrCreate("Token",this.userData.data.access_token)
-      // PreferenceUtil.getInstance()?.putPreference("Token",this.userData.data.access_token)
       router.replaceUrl({
         url:"pages/Index"
       })

@@ -6,7 +6,7 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "base": "file:../../common/base",
-    "home": "file:../../features/home"
+//    "base": "file:../../common/base",
+//    "home": "file:../../features/home"
   }
 }

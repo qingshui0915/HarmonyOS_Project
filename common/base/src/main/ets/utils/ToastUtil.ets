@@ -1,4 +1,9 @@
 import promptAction from '@ohos.promptAction'
+/**
+ * toast工具
+ * @param message
+ * @param duration
+ */
 export function showToast(message: string, duration: number = 2000) {
   try {
     promptAction.showToast({

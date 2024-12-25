@@ -28,4 +28,10 @@ export class Api {
     return requestSync("/lg/coin/userinfo/json", http.RequestMethod.GET);
   }
 
+  // async getUserInfo(): Promise<Response<UserData>> {
+  //   return requestSync("/lg/coin/userinfo/json", http.RequestMethod.GET);
+  // }
+  // async getUserInfo(): Promise<Response<UserData>> {
+  //   return requestSync("/lg/coin/userinfo/json", http.RequestMethod.GET);
+  // }
 }
