@@ -1,0 +1,16 @@
+{
+  "color": [
+    {
+      "name": "start_window_background",
+      "value": "#FFFFFF"
+    },
+    {"name": "text_h1",
+    "value": "#7C7B7D"},
+    {"name": "white",
+      "value": "#FFFFFF"},
+    {
+      "name": "color_shubihong",
+      "value": "#5B79FB"
+    }
+  ]
+}
