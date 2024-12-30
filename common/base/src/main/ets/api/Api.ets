@@ -2,6 +2,10 @@ import { UserData } from "../viewmodel/UserData";
 import { Response } from "./Response";
 import { http } from "@kit.NetworkKit";
 import { requestSync } from "../utils/HttpClientUtils";
+import { SmsCodeModel } from "../viewmodel/SmsCodeModel";
+import {TestModel} from "../viewmodel/TestModel"
+import { ImageDataModel } from "../viewmodel/ImageDataModel";
+import { UserInfoModel } from "../viewmodel/UserInfoModel";
 
 export class Api {
   private static instance: Api;
@@ -15,23 +19,25 @@ export class Api {
     }
     return Api.instance;
   }
-
+  //登录
   async login(username: string, password: string): Promise<Response<UserData>> {
-    return requestSync("api/auth/special-driver/connect/token", http.RequestMethod.POST, `client_id=app&grant_type=phone&scope=AuthServer offline_access&phone=${username}&code_verifier=${password}&platform=1&clientId=HW_PHONE1`);
+    return requestSync("api/auth/special-driver/connect/token", http.RequestMethod.POST, "",`client_id=app&grant_type=phone&scope=AuthServer offline_access&phone=${username}&code_verifier=${password}&platform=1&clientId=HW_PHONE1`);
+  }
+  //获取图形验证码
+  async getImgsCode(lastNonce?:string): Promise<Response<ImageDataModel>> {
+    return requestSync("api/app/notice/Sms/captcha", http.RequestMethod.GET,`lastNonce=${lastNonce}`);
+  }
+  //获取短信验证码
+  async getSmsCode(smsCodeModel:SmsCodeModel): Promise<Response<string>> {
+    return requestSync("api/app/notice/Sms/send-sms", http.RequestMethod.POST,"2222",smsCodeModel);
+  }
+  //获取登录用户信息
+  async getUserInfo(): Promise<Response<UserInfoModel>> {
+    return requestSync("api/app/special-driver/User-center-appservice/user-info", http.RequestMethod.GET);
   }
 
-  async logout(): Promise<Response<string>> {
-    return requestSync("/user/logout/json", http.RequestMethod.GET);
+  //获取首页Banner显示
+  async getBanner(code:string): Promise<Response<TestModel>> {
+    return requestSync("api/app/basics/open/bannerl-list", http.RequestMethod.GET,`platform=3&code=${code}`);
   }
-
-  async getUserInfo(): Promise<Response<UserData>> {
-    return requestSync("/lg/coin/userinfo/json", http.RequestMethod.GET);
-  }
-
-  // async getUserInfo(): Promise<Response<UserData>> {
-  //   return requestSync("/lg/coin/userinfo/json", http.RequestMethod.GET);
-  // }
-  // async getUserInfo(): Promise<Response<UserData>> {
-  //   return requestSync("/lg/coin/userinfo/json", http.RequestMethod.GET);
-  // }
 }

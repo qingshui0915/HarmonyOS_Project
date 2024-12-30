@@ -1,6 +1,8 @@
 {
   "src": [
     "pages/Index",
-    "pages/Pages_Login"
+    "pages/Pages_Login",
+    "pages/Pages_Mine",
+    "pages/Pages_PlaceOrder"
   ]
 }

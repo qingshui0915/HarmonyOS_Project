@@ -13,7 +13,7 @@ struct Index {
 
 
   aboutToAppear(): void {
-    console.log(JSON.stringify(AppStorage.get("Token")))
+    console.log("token:"+JSON.stringify(AppStorage.get("Token")))
 
     if (this.isSplitMode) {
       // 跟路由推送页面

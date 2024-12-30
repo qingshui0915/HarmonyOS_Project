@@ -23,6 +23,10 @@
     {
       "name": "system_background_color",
       "value": "#EFEFF3"
+    },
+    {
+      "name": "text_task_color",
+      "value": "#515391"
     }
   ]
 }

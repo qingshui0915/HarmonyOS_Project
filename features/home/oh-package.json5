@@ -6,6 +6,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "base": "file:../../common/base"
+    "base": "file:../../common/base",
+    "@smarthane/titlebar": "^1.0.3"
   }
 }

@@ -6,7 +6,8 @@
   "author": "",
   "license": "",
   "dependencies": {
-//    "base": "file:../../common/base",
-//    "home": "file:../../features/home"
+    "@tencent/mmkv": "2.0.1",
+    "base": "file:../../common/base",
+    "home": "file:../../features/home"
   }
 }
