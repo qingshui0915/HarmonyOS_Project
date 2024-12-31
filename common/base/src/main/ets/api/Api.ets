@@ -6,6 +6,7 @@ import { SmsCodeModel } from "../viewmodel/SmsCodeModel";
 import {TestModel} from "../viewmodel/TestModel"
 import { ImageDataModel } from "../viewmodel/ImageDataModel";
 import { UserInfoModel } from "../viewmodel/UserInfoModel";
+import { HomeIndexModel } from "../viewmodel/HomeIndexModel";
 
 export class Api {
   private static instance: Api;
@@ -35,6 +36,11 @@ export class Api {
   async getUserInfo(): Promise<Response<UserInfoModel>> {
     return requestSync("api/app/special-driver/User-center-appservice/user-info", http.RequestMethod.GET);
   }
+  //获取首页数据信息
+  async getHomeIndexData(): Promise<Response<HomeIndexModel>> {
+    return requestSync("api/app/special-driver/Home/index-data", http.RequestMethod.GET,"2222");
+  }
+
 
   //获取首页Banner显示
   async getBanner(code:string): Promise<Response<TestModel>> {

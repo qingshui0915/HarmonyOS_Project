@@ -2,7 +2,7 @@ import { http } from '@kit.NetworkKit';
 import { NetConstants } from '../constants/NetConstants';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Response } from '../api/Response'; // 导入Response类
-
+import { MMKV } from "@tencent/mmkv/src/main/ets/utils/MMKV";
 
 
 export async function requestSync<T>(path: string, method: http.RequestMethod,marker?:string ,extraData?: Object): Promise<Response<T>> {
@@ -11,19 +11,19 @@ export async function requestSync<T>(path: string, method: http.RequestMethod,ma
     // let access_token = `Bearer ${AppStorage.get("Token") || ""}`
 
     let header: HeaderInterFace = {
-      "Authorization":AppStorage.get("Token") || "",
+      "Authorization": MMKV.defaultMMKV().decodeString("Token") || "",
       'Content-Type': 'application/json',
       timeout : NetConstants.TIMEOUT
     }
     if (marker == ""){
       header = {
-        "Authorization":AppStorage.get("Token") || "",
+        "Authorization":MMKV.defaultMMKV().decodeString("Token") || "",
         'Content-Type': 'application/x-www-form-urlencoded',
         timeout : NetConstants.TIMEOUT
       }
     }else{
       header = {
-        "Authorization":AppStorage.get("Token") || "",
+        "Authorization":MMKV.defaultMMKV().decodeString("Token") || "",
         'Content-Type': 'application/json',
         timeout : NetConstants.TIMEOUT
       }

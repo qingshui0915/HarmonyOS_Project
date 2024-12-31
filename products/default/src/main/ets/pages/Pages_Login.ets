@@ -7,12 +7,15 @@ import { SmsCodeModel } from "base/src/main/ets/viewmodel/SmsCodeModel";
 import { JSON } from "@kit.ArkTS";
 import { MMKV } from "@tencent/mmkv/src/main/ets/utils/MMKV";
 import { UserInfoModel } from "base/src/main/ets/viewmodel/UserInfoModel";
+import PrivacyPolicyDialog  from "../view/PrivacyPolicyDialog"
+import { common } from "@kit.AbilityKit";
 
 const TOTAL_COUNT = 60
 
 @Entry
 @Component
 export struct Pages_Login {
+  @State showAgreePrivacyPolicy:boolean = true;
   @State showLoading: boolean = false;
   @State isChecked: boolean = false;
   @State title: string = "登录";
@@ -94,7 +97,6 @@ export struct Pages_Login {
     }
   }
 
-
   //开始倒计时
   startTimer() {
     this.timerId = setInterval(() => {
@@ -106,8 +108,6 @@ export struct Pages_Login {
       }
     }, 1000)
   }
-
-
 
   //销毁清空
   aboutToDisappear(): void {
@@ -136,7 +136,7 @@ export struct Pages_Login {
       showToast("登录成功");
       this.userData =res.data as UserData
       AppStorage.setOrCreate("Token", `Bearer ${this.userData.data.access_token}`)
-
+      MMKV.defaultMMKV().encodeString("Token",`Bearer ${this.userData.data.access_token}`)
       // let res = await Api.net().getBanner("SpecialLineDriverBanner");
       // this.lists = (res.data as Data<TestModel>).data
       // console.log("===="+JSON.stringify(this.lists))
@@ -152,7 +152,7 @@ export struct Pages_Login {
     let res = await Api.net().getUserInfo();
     this.showLoading = false;
     console.log(JSON.stringify(res))
-    if (res.isSuccessWithData()) {
+    if (res.isSuccessWithData()) {//200
       this.userInfoData = (res.data as UserInfoModel)
       MMKV.defaultMMKV().encodeString("USER_ID",this.userInfoData.data.Id)
       MMKV.defaultMMKV().encodeString("NAME",this.userInfoData.data.Name)
@@ -161,9 +161,9 @@ export struct Pages_Login {
       MMKV.defaultMMKV().encodeString("PHONE",this.userInfoData.data.Phone)
       MMKV.defaultMMKV().encodeString("CAR_ID",this.userInfoData.data.CarId)
       MMKV.defaultMMKV().encodeString("LoginClientId",this.userInfoData.data.LastLoginClientId)
+      //存储登录状态
+      MMKV.defaultMMKV().encodeString("IsLogins","IsLogin")
       if (!this.userInfoData.data.IsBindCar) {
-        //存储登录状态
-        MMKV.defaultMMKV().encodeString("IsLogins","IsLogin")
         showToast("跳转绑定车辆信息页面")
       }else{
         if (this.userInfoData.data.CarStatus == 1) {
@@ -183,7 +183,7 @@ export struct Pages_Login {
       showToast(res.message);
     }
   }
-
+  //图形验证码
   async getImageCode(){
     this.showLoading = true;
     let res = await Api.net().getImgsCode(this.lastNonce);
@@ -200,6 +200,18 @@ export struct Pages_Login {
       showToast(res.message)
     }
   }
+  //跳转隐私协议页面
+  openWebUrl(urlSuffix:string){
+    let url= "https://h5.hnxzkj.cn/"+urlSuffix;
+    router.pushUrl({
+      url: 'pages/Pages_WebView',
+      params:{
+        data1: 'message',
+        url: url  // 传递的 URL 参数
+      }
+    }, router.RouterMode.Single)
+  }
+
 
   build() {
     Stack({alignContent:Alignment.TopStart}){
@@ -292,7 +304,8 @@ export struct Pages_Login {
             .fontSize(14)
             .fontColor($r("app.color.color_shubihong"))
             .onClick(()=>{
-              showToast("点击跳转查看隐私协议")
+              this.openWebUrl("otherPages/pages/rich-text/rich-text?id=3718b9b6-6b7a-4d9f-9556-fc63a3ecdf86")
+              // showToast("点击跳转查看隐私协议")
             })
         }
         .width("100%")
@@ -306,10 +319,26 @@ export struct Pages_Login {
       .width('100%')
       .margin({ top: 360 })
       .padding({ left: 16, right: 16 })
+
+      if(this.showAgreePrivacyPolicy){//通过变量控制隐私政策弹窗是否显示
+        PrivacyPolicyDialog({
+          cancel:this.onCancel.bind(this),//取消按钮点击
+          confirm:this.onAgree.bind(this),//确定按钮点击
+        })
+      }
     }
     .width('100%')
     .height('100%')
 
+  }
+
+
+  onCancel():void {
+    (getContext(this) as common.UIAbilityContext)?.terminateSelf()
+  }
+
+  onAgree():void {//同意隐私政策
+    this.showAgreePrivacyPolicy = false;
   }
 
 }

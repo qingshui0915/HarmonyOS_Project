@@ -27,6 +27,10 @@
     {
       "name": "text_task_color",
       "value": "#515391"
+    },
+    {
+      "name": "text_task_number_color",
+      "value": "#515391"
     }
   ]
 }

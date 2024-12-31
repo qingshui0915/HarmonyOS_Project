@@ -1,7 +1,9 @@
-import { BreakpointConstants, CommonConstants, showToast } from 'base';
+import { Api, BreakpointConstants, CommonConstants, showToast } from 'base';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { TitleBar } from '@smarthane/titlebar'
 import { router } from '@kit.ArkUI';
+import { JSON } from '@kit.ArkTS';
+import { HomeIndexModel, LineList } from 'base/src/main/ets/viewmodel/HomeIndexModel';
 
 @Component
 export struct MainPage {
@@ -37,6 +39,8 @@ export struct MainPage {
         url:"pages/Pages_PlaceOrder"
       })
     })
+  @State showLoading: boolean = false;
+  @State indexData:HomeIndexModel = new HomeIndexModel()
 
   @Builder TitleBars(){
     Stack({ alignContent: Alignment.TopStart }){
@@ -53,7 +57,7 @@ export struct MainPage {
       GridRow({columns:{sm:3,md:3,lg:3},gutter:10}){
         GridCol({span:{sm:1,md:1},offset: 0, order: 0}){
           Column(){
-            Text("100")
+            Text(this.indexData?.data?.TodayPeople.toString())
               .fontColor($r("app.color.text_h1"))
               .fontSize(16)
               .fontWeight(FontWeight.Bold)
@@ -72,7 +76,7 @@ export struct MainPage {
 
         GridCol({span:{sm:1,md:1}}){
           Column(){
-            Text("100")
+            Text(this.indexData?.data?.TodayFinishOrder.toString())
               .fontColor($r("app.color.text_h1"))
               .fontSize(16)
               .fontWeight(FontWeight.Bold)
@@ -91,7 +95,7 @@ export struct MainPage {
 
         GridCol({span:{sm:1,md:1}}){
           Column(){
-            Text("100")
+            Text(this.indexData?.data?.TodayMoney.toString())
               .fontColor($r("app.color.text_h1"))
               .fontSize(16)
               .fontWeight(FontWeight.Bold)
@@ -118,13 +122,13 @@ export struct MainPage {
             .fontColor($r("app.color.text_color1"))
             .fontSize(22)
           Row(){
-            Text("0")
+            Text(this.indexData?.data?.WaitOrderCount.toString())
               .fontColor($r("app.color.text_task_color"))
               .fontSize(33)
             Text("单")
               .fontColor($r("app.color.text_h1"))
               .fontSize(13)
-            Text("0")
+            Text(this.indexData?.data?.WaitSmallOrderCount.toString())
               .fontColor($r("app.color.text_task_color"))
               .fontSize(33)
             Text("货")
@@ -147,13 +151,13 @@ export struct MainPage {
             .fontColor($r("app.color.text_color1"))
             .fontSize(22)
           Row(){
-            Text("0")
+            Text(this.indexData?.data?.TodayWaitOrderCount.toString())
               .fontColor($r("app.color.text_task_color"))
               .fontSize(33)
             Text("单")
               .fontColor($r("app.color.text_h1"))
               .fontSize(13)
-            Text("0")
+            Text(this.indexData?.data?.TodayWaitSmallOrderCount.toString())
               .fontColor($r("app.color.text_task_color"))
               .fontSize(33)
             Text("货")
@@ -173,13 +177,46 @@ export struct MainPage {
     }
 
     List(){
+      ForEach(this.indexData.data.LineList,(item:LineList, index:number)=>{
+        ListItem(){
+          Row(){
+            Text()
+              .fontColor($r("app.color.white"))
+              .fontSize(12)
+              .width(20)
+              .height(20)
+              .backgroundColor($r("app.color.text_task_color"))
 
+
+
+          }
+        }
+      },(item:LineList)=>item.Id)
     }
     .lanes(1)
     .edgeEffect(EdgeEffect.Spring) // 边缘效果设置为Spring
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
 
   }
+
+  aboutToAppear(): void {
+    this.getIndexData()
+  }
+
+
+
+  //请求首页数据
+  async getIndexData(){
+    this.showLoading = true;
+    let res = await Api.net().getHomeIndexData();
+    this.showLoading = false;
+    console.log("首页数据====>"+JSON.stringify(res.data))
+    this.indexData = (res.data as HomeIndexModel)
+    console.log("封装数据====" +JSON.stringify(this.indexData.data.TodaySmall))
+  }
+
+
+
 
   build() {
     Stack({ alignContent: Alignment.TopStart}){

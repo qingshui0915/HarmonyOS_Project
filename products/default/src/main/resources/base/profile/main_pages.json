@@ -3,6 +3,7 @@
     "pages/Index",
     "pages/Pages_Login",
     "pages/Pages_Mine",
-    "pages/Pages_PlaceOrder"
+    "pages/Pages_PlaceOrder",
+    "pages/Pages_WebView"
   ]
 }
