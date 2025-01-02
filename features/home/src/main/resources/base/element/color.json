@@ -29,8 +29,12 @@
       "value": "#515391"
     },
     {
-      "name": "text_task_number_color",
+      "name": "text_task_number_color1",
       "value": "#515391"
-    }
+    },
+    {
+      "name": "text_task_number_color2","value": "#ffff944d"
+    },
+    {"name": "text_task_list_bg","value": "#F8F7FF"}
   ]
 }

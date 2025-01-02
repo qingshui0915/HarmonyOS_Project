@@ -30,5 +30,4 @@ export class Data {
     AvatarUrl: string;
     CarId: string;
     PendingEntryAmount: number;
-    LastLoginClientId: string;
 }

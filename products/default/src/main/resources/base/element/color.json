@@ -30,6 +30,9 @@
     {"name": "mainColor","value": "#F1525A"},
     {"name": "start_main_color","value": "#FF8B59"},
     {"name": "end_main_color","value": "#F64848"},
-    {"name": "common_gray_bg","value": "#f3f4f5"}
+    {"name": "common_gray_bg","value": "#f3f4f5"},
+    {"name": "my_title_bar_bg","value": "#E6EAF3"},
+    {"name": "my_text_money_color","value": "#034f49"},
+    {"name": "my_button_cz_color","value": "#FF7B02"}
   ]
 }

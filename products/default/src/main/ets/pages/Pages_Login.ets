@@ -151,7 +151,7 @@ export struct Pages_Login {
     this.showLoading = true;
     let res = await Api.net().getUserInfo();
     this.showLoading = false;
-    console.log(JSON.stringify(res))
+    console.log("获取个人信息-==="+JSON.stringify(res))
     if (res.isSuccessWithData()) {//200
       this.userInfoData = (res.data as UserInfoModel)
       MMKV.defaultMMKV().encodeString("USER_ID",this.userInfoData.data.Id)
@@ -160,7 +160,7 @@ export struct Pages_Login {
       MMKV.defaultMMKV().encodeInt32("CAR_STATUS",this.userInfoData.data.CarStatus)
       MMKV.defaultMMKV().encodeString("PHONE",this.userInfoData.data.Phone)
       MMKV.defaultMMKV().encodeString("CAR_ID",this.userInfoData.data.CarId)
-      MMKV.defaultMMKV().encodeString("LoginClientId",this.userInfoData.data.LastLoginClientId)
+      // MMKV.defaultMMKV().encodeString("LoginClientId",this.userInfoData.data.LastLoginClientId)
       //存储登录状态
       MMKV.defaultMMKV().encodeString("IsLogins","IsLogin")
       if (!this.userInfoData.data.IsBindCar) {
@@ -313,13 +313,10 @@ export struct Pages_Login {
         .justifyContent(FlexAlign.Center)
         .margin({top:10})
 
-
-
       }
       .width('100%')
       .margin({ top: 360 })
       .padding({ left: 16, right: 16 })
-
       if(this.showAgreePrivacyPolicy){//通过变量控制隐私政策弹窗是否显示
         PrivacyPolicyDialog({
           cancel:this.onCancel.bind(this),//取消按钮点击
@@ -339,6 +336,11 @@ export struct Pages_Login {
 
   onAgree():void {//同意隐私政策
     this.showAgreePrivacyPolicy = false;
+  }
+
+
+  aboutToAppear(): void {
+
   }
 
 }

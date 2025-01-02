@@ -8,6 +8,7 @@
   "dependencies": {
     "@tencent/mmkv": "2.0.1",
     "base": "file:../../common/base",
-    "home": "file:../../features/home"
+    "home": "file:../../features/home",
+    "@smarthane/titlebar": "^1.0.3"
   }
 }

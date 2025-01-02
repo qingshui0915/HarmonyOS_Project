@@ -1,6 +1,6 @@
 import webView from '@ohos.web.webview'
 import { router } from '@kit.ArkUI';
-import { HdNav } from 'base';
+// import { HdNav } from 'base';
 
 @Entry
 @Component
@@ -19,9 +19,9 @@ struct Pages_WebView {
 
   build() {
     Column() {
-      HdNav({
-        title:this.title
-      })
+      // HdNav({
+      //   title:this.title
+      // })
       //
       Web({
         src: "https://testh5.hnxzkj.cn/otherPages/pages/rich-text/rich-text?code=UserPrivacyPolicy",

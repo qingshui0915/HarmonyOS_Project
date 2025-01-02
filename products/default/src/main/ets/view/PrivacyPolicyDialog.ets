@@ -2,8 +2,8 @@ import { router } from '@kit.ArkUI'
 
 @Component
 export default struct PrivacyPolicyDialog{
-    cancel!: () => void
-    confirm!: () => void
+    cancel?: () => void
+    confirm?: () => void
 
     build() {
         Stack(){
@@ -13,13 +13,6 @@ export default struct PrivacyPolicyDialog{
                 Scroll(){
                     Text(){
                         Span($r('app.string.privacy_policy_start'))
-                        // Span($r('app.string.user_agreement_two')).fontColor($r('app.color.mainColor')).onClick(() => {
-                        //     this.openWebUrl("/useragreement.html");
-                        // })
-                        // Span($r('app.string.and'))
-                        // Span($r('app.string.privacy_policy_two')).fontColor($r('app.color.mainColor')).onClick(() => {
-                        //     this.openWebUrl("/privacypolicy.html");
-                        // })
                         Span($r('app.string.simple_privacy_policy'))
                     }.fontSize(16).fontColor($r('app.color.body_color')).margin({
                         left:25,
@@ -29,11 +22,16 @@ export default struct PrivacyPolicyDialog{
 
                 Column(){
                     Button($r('app.string.disagree_privacy_policy')).onClick(() => {
-                        this.cancel();
+                        if (this.cancel!=undefined) {
+                            this.cancel();
+                        }
+
                     }).fontColor($r('app.color.other_color')).fontSize(15).backgroundColor(Color.Transparent)
 
                     Button($r('app.string.agree_privacy_policy')).onClick(() => {
-                        this.confirm();
+                        if (this.confirm!=undefined) {
+                            this.confirm();
+                        }
                     }).fontColor($r('app.color.white')).fontSize(17)
                         .linearGradient({
                             direction: GradientDirection.Right, colors:[[$r('app.color.color_shubihong'),0.0],[$r('app.color.color_shubihong'),1.0]]
@@ -43,16 +41,5 @@ export default struct PrivacyPolicyDialog{
                 }
             }.backgroundColor($r('app.color.white')).borderRadius(13).width('80%')
         }.width('100%').height('100%').backgroundColor("#4D000000")//黑色背景 透明度约为 30%
-    }
-
-    openWebUrl(urlSuffix:string){
-        let url= "https://www.srzs.top"+urlSuffix;
-        router.pushUrl({
-            url: 'pages/WebViewPage',
-            params:{
-                data1: 'message',
-                url: url  // 传递的 URL 参数
-            }
-        }, router.RouterMode.Single)
     }
 }

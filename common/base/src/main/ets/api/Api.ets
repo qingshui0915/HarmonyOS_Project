@@ -7,6 +7,7 @@ import {TestModel} from "../viewmodel/TestModel"
 import { ImageDataModel } from "../viewmodel/ImageDataModel";
 import { UserInfoModel } from "../viewmodel/UserInfoModel";
 import { HomeIndexModel } from "../viewmodel/HomeIndexModel";
+import { HomeDataModel } from "../viewmodel/HomeDataModel";
 
 export class Api {
   private static instance: Api;
@@ -22,7 +23,7 @@ export class Api {
   }
   //登录
   async login(username: string, password: string): Promise<Response<UserData>> {
-    return requestSync("api/auth/special-driver/connect/token", http.RequestMethod.POST, "",`client_id=app&grant_type=phone&scope=AuthServer offline_access&phone=${username}&code_verifier=${password}&platform=1&clientId=HW_PHONE1`);
+    return requestSync("api/auth/custom-driver/connect/token", http.RequestMethod.POST, "",`client_id=app&grant_type=phone_verify&scope=AuthServer offline_access&phone_number=${username}&phone_verify_code=${password}&platform=1`);
   }
   //获取图形验证码
   async getImgsCode(lastNonce?:string): Promise<Response<ImageDataModel>> {
@@ -34,12 +35,18 @@ export class Api {
   }
   //获取登录用户信息
   async getUserInfo(): Promise<Response<UserInfoModel>> {
-    return requestSync("api/app/special-driver/User-center-appservice/user-info", http.RequestMethod.GET);
+    return requestSync("api/app/custom-driver/User-center/user-info", http.RequestMethod.GET);
   }
   //获取首页数据信息
   async getHomeIndexData(): Promise<Response<HomeIndexModel>> {
-    return requestSync("api/app/special-driver/Home/index-data", http.RequestMethod.GET,"2222");
+    return requestSync("api/app/custom-driver/Home/index-data", http.RequestMethod.GET);
   }
+  //获取首页待服务数据信息
+  async getHomeDatas(carId:string): Promise<Response<HomeDataModel>> {
+    return requestSync(`api/app/custom-line/Driver-order/today-order-data/${carId}`, http.RequestMethod.GET,"");
+  }
+
+
 
 
   //获取首页Banner显示
