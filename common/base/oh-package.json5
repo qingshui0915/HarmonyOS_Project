@@ -6,6 +6,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "@tencent/mmkv": "2.0.1"
+    "@tencent/mmkv": "2.0.1",
+    "@peakmain/library": "^2.0.10"
   }
 }

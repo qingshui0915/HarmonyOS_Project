@@ -39,7 +39,13 @@ export default struct PrivacyPolicyDialog{
                         top:15,bottom:21
                     }).borderRadius(24)
                 }
-            }.backgroundColor($r('app.color.white')).borderRadius(13).width('80%')
-        }.width('100%').height('100%').backgroundColor("#4D000000")//黑色背景 透明度约为 30%
+            }
+            .backgroundColor($r('app.color.white'))
+            .borderRadius(13)
+            .width('80%')
+        }
+        .width('100%')
+        .height('100%')
+        .backgroundColor("#4D000000")//黑色背景 透明度约为 30%
     }
 }

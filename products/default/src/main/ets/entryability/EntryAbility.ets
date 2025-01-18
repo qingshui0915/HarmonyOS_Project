@@ -4,7 +4,6 @@ import { window } from '@kit.ArkUI';
 import { BreakpointConstants, CommonConstants, DBUtil, KvUtil, PreferenceUtil, showToast, WindowUtil } from 'base';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { MMKV } from '@tencent/mmkv/src/main/ets/utils/MMKV';
-import { distributedKVStore } from '@kit.ArkData';
 
 export default class EntryAbility extends UIAbility {
   private windowObject?: window.Window;
@@ -50,6 +49,7 @@ export default class EntryAbility extends UIAbility {
       this.windowUtil.setWindowStage(windowStage);
       await this.windowUtil.setMainWindow();
       if (deviceInfo.deviceType !== CommonConstants.DEVICE_TYPES[0]) {
+        console.log("走这里了吗")
         this.windowUtil.setFullScreen();
       }
       this.windowUtil.setAvoidRectHeight();
@@ -77,7 +77,6 @@ export default class EntryAbility extends UIAbility {
         hilog.info(0x0000, 'testTag', 'Succeeded in loading the content.');
       });
     }
-
   }
 
   onWindowStageDestroy(): void {

@@ -1,4 +1,4 @@
-import { Api ,showToast,PreferenceUtil,UserData,RoutineConstants} from "base"
+import { Api ,showToast,PreferenceUtil,UserData,RoutineConstants, EventBus} from "base"
 import { router } from "@kit.ArkUI";
 import { VerificationCodeDialog } from "../view/VerificationCodeDialog"
 import { TestModel } from "base/src/main/ets/viewmodel/TestModel";
@@ -11,6 +11,7 @@ import PrivacyPolicyDialog  from "../view/PrivacyPolicyDialog"
 import { common } from "@kit.AbilityKit";
 
 const TOTAL_COUNT = 60
+
 
 @Entry
 @Component
@@ -137,6 +138,8 @@ export struct Pages_Login {
       this.userData =res.data as UserData
       AppStorage.setOrCreate("Token", `Bearer ${this.userData.data.access_token}`)
       MMKV.defaultMMKV().encodeString("Token",`Bearer ${this.userData.data.access_token}`)
+      MMKV.defaultMMKV().encodeString("R_Token",`${this.userData.data.refresh_token}`)
+
       // let res = await Api.net().getBanner("SpecialLineDriverBanner");
       // this.lists = (res.data as Data<TestModel>).data
       // console.log("===="+JSON.stringify(this.lists))
@@ -338,7 +341,9 @@ export struct Pages_Login {
     this.showAgreePrivacyPolicy = false;
   }
 
+ onPageShow(): void {
 
+ }
   aboutToAppear(): void {
 
   }

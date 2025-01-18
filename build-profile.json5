@@ -16,7 +16,7 @@
     ],
     "buildModeSet": [
       {
-        "name": "debug",
+        "name": "debug"
       },
       {
         "name": "release"
@@ -38,11 +38,15 @@
     },
     {
       "name": "base",
-      "srcPath": "./common/base",
+      "srcPath": "./common/base"
     },
     {
       "name": "home",
-      "srcPath": "./features/home",
+      "srcPath": "./features/home"
+    },
+    {
+      "name": "watermark",
+      "srcPath": "./casesfeature/watermark"
     }
   ]
 }

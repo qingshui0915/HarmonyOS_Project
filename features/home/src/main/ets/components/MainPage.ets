@@ -1,16 +1,20 @@
-import { Api, BreakpointConstants, CommonConstants, showToast } from 'base';
+import { Api, BreakpointConstants, CommonConstants, EventBus, LoadingUtils, showToast } from 'base';
 import { TitleBar } from '@smarthane/titlebar'
 import { router } from '@kit.ArkUI';
 import { JSON } from '@kit.ArkTS';
 import { HomeIndexModel } from 'base/src/main/ets/viewmodel/HomeIndexModel';
 import { MMKV } from '../../../../../../common/base/oh_modules/@tencent/mmkv/src/main/ets/utils/MMKV';
-import { HomeDataModel, LineList } from 'base/src/main/ets/viewmodel/HomeDataModel';
-import { Data } from 'base/src/main/ets/api/Response';
+import { HomeDataModel, Data,LineList } from 'base/src/main/ets/viewmodel/HomeDataModel';
+import { common } from '@kit.AbilityKit';
 
+interface NoticeChildModule {
+  name: string
+}
 @Component
 export struct MainPage {
+  private context = getContext(this) as common.UIAbilityContext;
   private scroller: Scroller = new Scroller()
-  @State isShow: Visibility = Visibility.Visible
+  @State isShow: Visibility = Visibility.None
   @State currentBottomIndex: number = 0;
   @StorageLink(BreakpointConstants.CURRENT_BREAKPOINT) currentBreakpoint: string = BreakpointConstants.BREAKPOINT_LG;
   @StorageLink(CommonConstants.AVOID_RECT_HEIGHT_TOP) TopRectHeight: number = 0;
@@ -41,17 +45,27 @@ export struct MainPage {
         url:"pages/Pages_PlaceOrder"
       })
     })
-  @State showLoading: boolean = false;
   @State carId :string | undefined = ""
   @State indexData:HomeIndexModel = new HomeIndexModel()
   @State homeData:HomeDataModel = new HomeDataModel()
+  @State homeTop:Data = new Data()
+  @State homeItemData:LineList[] = []
+  private onCheckItem = (value:string)=>{}
+  @State toBeCompleted :Visibility =Visibility.None
+  @Link @Watch("onFlushed") trigger :boolean
 
+
+  onFlushed(){
+    if (!this.trigger) {
+      this.getIndexData()
+    }
+
+  }
   @Builder TitleBars(){
     Stack({ alignContent: Alignment.TopStart }){
       Flex({ direction: FlexDirection.Column }) {
         TitleBar({ model: $model9 })
       }
-      .margin({top:30})
     }
     .width('100%')
     .backgroundColor(Color.White)
@@ -61,7 +75,7 @@ export struct MainPage {
       GridRow({columns:{sm:3,md:3,lg:3},gutter:10}){
         GridCol({span:{sm:1,md:1},offset: 0, order: 0}){
           Column(){
-            Text(this.homeData?.data?.TodayPeople.toString())
+            Text(this.homeData?.data?.TodayPeople?.toString() !=null ?this.homeData?.data?.TodayPeople?.toString() : "0")
               .fontColor($r("app.color.text_h1"))
               .fontSize(16)
               .fontWeight(FontWeight.Bold)
@@ -74,13 +88,16 @@ export struct MainPage {
           .justifyContent(FlexAlign.Center)
           .height(90)
         }
-        .onClick(()=>{
-          showToast("点击今日人数")
-        })
+        // .onClick(()=>{
+        //   router.pushUrl({
+        //     url:"pages/Pages_WorkloadStatistics",
+        //     params:{value:"0"}
+        //   })
+        // })
 
         GridCol({span:{sm:1,md:1}}){
           Column(){
-            Text(this.homeData?.data?.TodayFinishOrder.toString())
+            Text(this.homeData?.data?.TodayFinishOrder?.toString() != null ?this.homeData?.data?.TodayFinishOrder?.toString() : "0" )
               .fontColor($r("app.color.text_h1"))
               .fontSize(16)
               .fontWeight(FontWeight.Bold)
@@ -93,13 +110,13 @@ export struct MainPage {
           .justifyContent(FlexAlign.Center)
           .height(90)
         }
-        .onClick(()=>{
-          showToast("点击今日完单")
-        })
+        // .onClick(()=>{
+        //   showToast("点击今日完单")
+        // })
 
         GridCol({span:{sm:1,md:1}}){
           Column(){
-            Text(this.homeData?.data?.TodayMoney.toString())
+            Text(this.homeData?.data?.TodayMoney?.toString() != null ? this.homeData?.data?.TodayMoney?.toString() : "0" )
               .fontColor($r("app.color.text_h1"))
               .fontSize(16)
               .fontWeight(FontWeight.Bold)
@@ -112,10 +129,16 @@ export struct MainPage {
           .alignItems(HorizontalAlign.Center)
           .justifyContent(FlexAlign.Center)
         }
-        .onClick(()=>{
-          showToast("点击今日流水")
-        })
+        // .onClick(()=>{
+        //   showToast("点击今日流水")
+        // })
       }
+      .onClick(()=>{
+        router.pushUrl({
+          url:"pages/Pages_WorkloadStatistics",
+          params:{value:"0"}
+        })
+      })
   }
 
   @Builder taskList(){
@@ -126,7 +149,7 @@ export struct MainPage {
             .fontColor($r("app.color.text_color1"))
             .fontSize(22)
           Row(){
-            Text(this.homeData?.data?.WaitOrderCount.toString())
+            Text(this.homeTop.WaitOrderCount?.toString() != null ? this.homeTop.WaitOrderCount?.toString() : "0")
               .fontColor($r("app.color.text_task_color"))
               .fontSize(33)
             Text("单")
@@ -145,12 +168,12 @@ export struct MainPage {
     }
 
     List(){
-      ForEach(this.homeData?.data?.LineList,(item:LineList, index:number)=>{
+      ForEach(this.homeItemData,(item:LineList, index:number)=>{
         ListItem(){
           Row(){
             RelativeContainer(){
               Row(){
-                Text(index.toString())
+                Text(this.homeItemData.length.toString())
                   .fontColor($r("app.color.white"))
                   .fontSize(12)
                   .width(20)
@@ -169,7 +192,7 @@ export struct MainPage {
 
             Flex({direction:FlexDirection.Row}){
               Row(){
-                Text(item.StartCity)
+                Text(this.homeItemData[index].StartCity)
                   .fontColor($r("app.color.text_color1"))
                   .fontSize(17)
 
@@ -177,7 +200,7 @@ export struct MainPage {
                   .width(25)
                   .height(20)
 
-                Text(item.EndCity)
+                Text(this.homeItemData[index].EndCity)
                   .fontColor($r("app.color.text_color1"))
                   .fontSize(17)
               }
@@ -186,14 +209,14 @@ export struct MainPage {
               .justifyContent(FlexAlign.Start)
               .alignItems(VerticalAlign.Center)
 
-              Row(){
+              Row({space:5}){
                 Text("查看订单")
-                  .fontColor($r("app.color.text_color1"))
-                  .fontSize(22)
+                  .fontColor($r("app.color.text_h1"))
+                  .fontSize(19)
                 Image($r("app.media.right_jt_copy"))
                   .backgroundColor($r("app.color.color_shubihong"))
-                  .width(20)
-                  .height(30)
+                  .width(25)
+                  .height(25)
 
               }
               .width("35%")
@@ -212,7 +235,8 @@ export struct MainPage {
           .backgroundColor($r("app.color.text_task_list_bg"))
         }
         .onClick(()=>{
-          showToast("点击条目事件调用")
+          // showToast("点击条目事件调用")
+          this.onCheckItem(this.homeItemData[index].Id)
         })
       },(item:LineList)=>item.Id)
     }
@@ -221,7 +245,19 @@ export struct MainPage {
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 
+  onPageShow(): void {
+
+  }
+
+
+  onPageHide(): void {
+
+  }
+
+
   aboutToAppear(): void {
+    LoadingUtils.init(this.getUIContext());
+    console.log("过期token===>"+JSON.stringify(MMKV.defaultMMKV().decodeString("Token")))
     this.getIndexData()
   }
 
@@ -229,29 +265,49 @@ export struct MainPage {
 
   //请求首页数据
   async getIndexData(){
-    console.log("啥啥啥===>"+JSON.stringify(MMKV.defaultMMKV().decodeString("CAR_ID")))
-    this.showLoading = true;
+    LoadingUtils.showLoading("加载中...");
     let res = await Api.net().getHomeIndexData();
-    this.showLoading = false;
-    console.log("首页数据====>"+JSON.stringify(res.data))
-    this.indexData = (res.data as HomeIndexModel);
-    console.log("首页数据====>"+JSON.stringify(this.indexData.data.Code))
-    if (this.indexData.data.Code != 302) {
-      MMKV.defaultMMKV().encodeString("CAR_ID",this.indexData.data.CarId)
-      //请求首页待服务数据展示
-      this.getHomeDatas(this.indexData.data.CarId)
-    }else if (this.indexData.data.Code ==302){//未绑定车辆
-      this.isShow = Visibility.None
+    if (res.isSuccessWithData()) {
+      this.indexData = (res.data as HomeIndexModel);
+      if (this.indexData.data.Code == 200) {
+        LoadingUtils.hideLoading();
+        MMKV.defaultMMKV().encodeString("CAR_ID",this.indexData.data.CarId)
+        //请求首页待服务数据展示
+        this.getHomeDatas(this.indexData.data.CarId)
+      }else if (this.indexData.data.Code ==302){//未绑定车辆
+        this.isShow = Visibility.None
+      }
+    }else{
+      LoadingUtils.hideLoading();
+      showToast(res.message)
     }
+
+
   }
 
   async getHomeDatas(carId:string){
-    this.showLoading = true;
+    LoadingUtils.showLoading("加载中...");
     let res = await Api.net().getHomeDatas(carId);
-    this.showLoading = false;
-    console.log("首页待服务数据====>"+JSON.stringify(res.data))
-    this.homeData = res.data as HomeDataModel
-    console.log("首页待服务数据2222====>"+JSON.stringify(this.homeData.data.LineList))
+    if (res.isSuccessWithData()) { //200
+      if (res.data?.statusCode==200) {
+        LoadingUtils.hideLoading();
+        this.homeData = res.data as HomeDataModel
+        this.homeTop = this.homeData.data
+        this.homeItemData = this.homeData.data.LineList
+        if (this.homeTop.Expire) {
+          this.toBeCompleted = Visibility.Visible
+        }
+        if (this.homeItemData.length>0) {
+          this.isShow = Visibility.Visible
+        }
+      }else{
+        LoadingUtils.hideLoading();
+        showToast((res.data?.message as string))
+      }
+    }else{
+      LoadingUtils.hideLoading();
+      showToast(res.message);
+    }
   }
 
 
@@ -301,6 +357,59 @@ export struct MainPage {
 
 
 
+          Column(){
+            Stack(){
+
+              RelativeContainer(){
+                Row(){
+                  Text("待补齐")
+                    .fontColor($r("app.color.white"))
+                    .fontSize(14)
+                    .width(60)
+                    .height(30)
+                    .textAlign(TextAlign.Center)
+                    .backgroundColor($r("app.color.text_task_number_color2"))
+                    .borderRadius({topLeft:8,bottomRight:8})
+                }
+
+              }
+
+              Stack({alignContent:Alignment.Center}){
+                Row(){
+                  Column({space:5}){
+                    Text("请尽快完成司机信息")
+                      .fontColor($r("app.color.text_color1"))
+                      .fontSize(13)
+                    Text("为了避免影响出车接单，请尽快更新您的资料信息")
+                      .fontColor($r("app.color.text_color1"))
+                      .fontSize(13)
+                  }
+                  .layoutWeight(1)
+                  .alignItems(HorizontalAlign.Start)
+                  Text("去补齐")
+                    .fontColor($r("app.color.white"))
+                    .fontSize(14)
+                    .width(60)
+                    .height(30)
+                    .borderRadius(8)
+                    .textAlign(TextAlign.Center)
+                    .backgroundColor($r("app.color.text_task_number_color2"))
+                }
+                .margin({left:20,right:10})
+                .justifyContent(FlexAlign.SpaceBetween)
+              }
+              .onClick(()=>{
+                router.pushUrl({
+                  url:"pages/Pages_DocumentReview"
+                })
+              })
+            }
+          }
+          .visibility(this.toBeCompleted)
+          .height(120)
+          .margin({left:18,right:18,top:10})
+          .backgroundColor($r("app.color.start_window_background"))
+          .borderRadius(10)
         }
 
       }

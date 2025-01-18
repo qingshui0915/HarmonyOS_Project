@@ -4,7 +4,8 @@
   "dependencies": {
     "base": "file:./common/base",
     "home": "file:./features/home",
-
+    "@ohos/imageknife": "^3.2.0",
+    "@peakmain/library": "^2.0.10"
   },
   "devDependencies": {
     "@ohos/hypium": "1.0.19",

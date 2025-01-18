@@ -4,6 +4,24 @@
     "pages/Pages_Login",
     "pages/Pages_Mine",
     "pages/Pages_PlaceOrder",
-    "pages/Pages_WebView"
+    "pages/Pages_WebView",
+    "pages/Pages_MyInfo",
+    "pages/Pages_All_TaskList",
+    "pages/Pages_MyCar",
+    "pages/Pages_BalanceRecords",
+    "pages/Pages_WithdrawalRecord",
+    "pages/Pages_Recharge",
+    "pages/Pages_Payouts",
+    "pages/Pages_TaskOrder",
+    "pages/Pages_TaskList",
+    "pages/Pages_InputCode",
+    "pages/Pages_WorkloadStatistics",
+    "pages/Pages_DocumentReview",
+    "pages/Pages_PersonalData",
+    "pages/Pages_CompletionIdCard",
+    "pages/Pages_CompletionDriverCard",
+    "pages/Pages_CompletionTravelCard",
+    "pages/Pages_CompletionVehicleLicense",
+    "pages/Pages_CompulsoryTrafficInsurance"
   ]
 }

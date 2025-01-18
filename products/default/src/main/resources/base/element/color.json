@@ -33,6 +33,19 @@
     {"name": "common_gray_bg","value": "#f3f4f5"},
     {"name": "my_title_bar_bg","value": "#E6EAF3"},
     {"name": "my_text_money_color","value": "#034f49"},
-    {"name": "my_button_cz_color","value": "#FF7B02"}
+    {"name": "my_button_cz_color","value": "#FF7B02"},
+    {"name": "button_logout_bg","value": "#F15C58"},
+    {"name": "button_qr_code_bg","value": "#06A936"},
+    {"name": "text_order_money_color","value": "#1ABC9C"},
+    {"name": "my_car_bg","value": "#0ECB82"},
+    {"name": "text_payouts_color","value": "#0072FF"},
+    {"name": "task_list_item_bg","value": "#F5F7FF"},
+    {"name": "text_color2","value": "#999999"},
+    {"name": "warn_color_bg","value": "#FFFFF8DD"},
+    {"name": "button_progress_bg_color","value": "#317aff"},
+    {"name": "enter_the_documents_bg_color","value": "#f7f7f7"},
+    {"name": "title_required_text_color","value": "#FF453A"},
+    {"name": "layout_dividing_lines_bg_color","value": "#E5E5E5"},
+    {"name": "warn_text_color","value": "#E67E22"}
   ]
 }

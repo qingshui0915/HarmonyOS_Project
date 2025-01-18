@@ -9,6 +9,8 @@
     "@tencent/mmkv": "2.0.1",
     "base": "file:../../common/base",
     "home": "file:../../features/home",
-    "@smarthane/titlebar": "^1.0.3"
+    "@smarthane/titlebar": "^1.0.3",
+    "@ohos/imageknife": "^3.2.0",
+    "watermark": "file:../../casesfeature/watermark"
   }
 }

@@ -14,10 +14,10 @@ export class LineList {
 }
 
 export class Data {
-    TodayPeople: number;
-    TodayFinishOrder: number;
-    TodayMoney: number;
-    WaitOrderCount: number;
+    TodayPeople: number | null;
+    TodayFinishOrder: number | null;
+    TodayMoney: number | null;
+    WaitOrderCount: number | null;
     Expire: boolean;
     LineList: LineList[];
 }
