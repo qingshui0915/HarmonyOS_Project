@@ -1,5 +1,8 @@
 import { TitleBar } from '@smarthane/titlebar';
 import { router } from '@kit.ArkUI';
+import { EnumScopeOfBusiness } from '../enum/EnumScopeOfBusiness';
+import { EnumOwnership } from '../enum/EnumOwnership';
+import { DateUtils } from 'base';
 
 /**
  *
@@ -17,9 +20,33 @@ struct Pages_CompletionVehicleLicense {
     .setTitleFontColor($r("app.color.text_color1"))
   scroller: Scroller = new Scroller()
   selectedDate: Date = new Date()
-  selectBirthDate: Date = new Date()
-  @State deadline :string =""
-  @State brithDate :string =""
+  selectSignageStartDate: Date = new Date()
+  selectSignageEndDate: Date = new Date()
+  selectExpirationDate: Date = new Date()
+  selectExpiration_Date: Date = new Date()
+  @State enumScopeOfBusiness:EnumScopeOfBusiness[] =EnumScopeOfBusiness.values()//经营范围枚举类
+  @State enumOwnership:EnumOwnership[] =EnumOwnership.values() //所有制枚举类
+  @State qualification:string[] =["是","否"] //是否具备客运资格 枚举类
+  @State vehicleLicenseQualificationNumber :string =""//车证资格证号-->赋值
+  @State issuingAuthority :string =""//发证机构-->赋值
+  @State areaCode :string =""//区域代码-->赋值
+  @State scopeOfBusiness :string =""//经营范围-->赋值 提交时枚举转换类型
+  @State newEnumScopeOfBusiness:string[] =[]
+  private selectScopeOfBusiness: number | number[] = 0
+  private selectQualification: number | number[] = 0
+  @State carSeats :string =""//车座位-->赋值
+  @State markingTheGradeNumber :string =""//标志牌号-->赋值
+  @State ownership :string =""//所有制-->赋值 提交时枚举转换类型
+  @State newEnumOwnership:string[] = []
+  private selectOwnership :number | number[] = 0
+  @State vehicleTypeClass :string =""//车辆类型等级-->赋值
+  @State signageDateStart :string =""//标志牌日期起-->赋值
+  @State signDateEnds :string =""//标志牌日期止-->赋值
+  @State expirationDate :string =""//有效期止-->赋值
+  @State qualificationCertificate :string =""//人证资格证号-->赋值
+  @State passengerTransportQualifications :string =""//是否具备客运资格-->赋值 提交时枚举转换类型
+  @State qualificationCertificateExpirationDate :string =""//有效期止-->赋值
+
 
 
 
@@ -27,7 +54,18 @@ struct Pages_CompletionVehicleLicense {
     Column(){
       TitleBar({ model: $model1 })
     }
+  }
 
+
+  aboutToAppear(): void {
+    for (let index = 0; index < this.enumScopeOfBusiness.length; index++) {
+      this.newEnumScopeOfBusiness[index] = this.enumScopeOfBusiness[index].name
+    }
+    for (let i = 0; i < this.enumOwnership.length; i++) {
+      this.newEnumOwnership[i] = this.enumOwnership[i].name
+    }
+    console.log("222===>" + JSON.stringify(this.newEnumScopeOfBusiness))
+    console.log("111===>" + JSON.stringify(this.newEnumOwnership))
   }
 
   build() {
@@ -67,7 +105,6 @@ struct Pages_CompletionVehicleLicense {
                 //车证资格证号
                 Row() {
                   Row({ space: 5 }) {
-
                     Text('车证资格证号')
                       .fontColor($r('app.color.text_color1'))
                       .fontSize(14)
@@ -84,6 +121,9 @@ struct Pages_CompletionVehicleLicense {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.vehicleLicenseQualificationNumber = value
+                    })
 
                 }
 
@@ -102,7 +142,7 @@ struct Pages_CompletionVehicleLicense {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入" ,text: this.issuingAuthority? this.issuingAuthority :""})
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -110,6 +150,9 @@ struct Pages_CompletionVehicleLicense {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.issuingAuthority = value
+                    })
 
                 }
 
@@ -128,7 +171,7 @@ struct Pages_CompletionVehicleLicense {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入",text:this.areaCode ? this.areaCode : "" })
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -136,6 +179,9 @@ struct Pages_CompletionVehicleLicense {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.areaCode = value
+                    })
 
                 }
 
@@ -159,7 +205,7 @@ struct Pages_CompletionVehicleLicense {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.brithDate ? this.brithDate : "请选择")
+                    Text(this.scopeOfBusiness ? this.scopeOfBusiness : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -171,14 +217,15 @@ struct Pages_CompletionVehicleLicense {
                   .justifyContent(FlexAlign.End)
                   .layoutWeight(1)
                   .onClick(() => {
-                    DatePickerDialog.show({
-                      start: new Date("2000-1-1"),
-                      end: new Date("2100-12-31"),
-                      selected: this.selectBirthDate,
-                      onDateAccept: (value: Date) => {
-                        //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectBirthDate = value
-                        this.brithDate = value.toLocaleDateString()
+                    TextPickerDialog.show({
+                      range: this.newEnumScopeOfBusiness,
+                      selected: this.selectScopeOfBusiness,
+                      onAccept: (value: TextPickerResult) => {
+                        // 当弹窗再次弹出时显示选中的是上一次确定的选项
+                        this.selectScopeOfBusiness = value.index
+                        console.log(this.selectScopeOfBusiness + '')
+                        // 点击确定后，被选到的文本数据展示到页面 {"value":"黄色","index":1}
+                        this.scopeOfBusiness = value.value as string
                       }
                     })
                   })
@@ -205,7 +252,7 @@ struct Pages_CompletionVehicleLicense {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入",text:this.carSeats ? this.carSeats : ""})
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -213,6 +260,9 @@ struct Pages_CompletionVehicleLicense {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.carSeats = value
+                    })
 
                 }
 
@@ -235,7 +285,7 @@ struct Pages_CompletionVehicleLicense {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入" ,text:this.markingTheGradeNumber ?this.markingTheGradeNumber : ""})
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -243,6 +293,9 @@ struct Pages_CompletionVehicleLicense {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.markingTheGradeNumber = value
+                    })
 
                 }
 
@@ -265,7 +318,7 @@ struct Pages_CompletionVehicleLicense {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.brithDate ? this.brithDate : "请选择")
+                    Text(this.ownership ? this.ownership : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -277,14 +330,15 @@ struct Pages_CompletionVehicleLicense {
                   .justifyContent(FlexAlign.End)
                   .layoutWeight(1)
                   .onClick(() => {
-                    DatePickerDialog.show({
-                      start: new Date("2000-1-1"),
-                      end: new Date("2100-12-31"),
-                      selected: this.selectBirthDate,
-                      onDateAccept: (value: Date) => {
-                        //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectBirthDate = value
-                        this.brithDate = value.toLocaleDateString()
+                    TextPickerDialog.show({
+                      range: this.newEnumOwnership,
+                      selected: this.selectOwnership,
+                      onAccept: (value: TextPickerResult) => {
+                        // 当弹窗再次弹出时显示选中的是上一次确定的选项
+                        this.selectOwnership = value.index
+                        console.log(this.selectOwnership + '')
+                        // 点击确定后，被选到的文本数据展示到页面 {"value":"黄色","index":1}
+                        this.ownership = value.value as string
                       }
                     })
                   })
@@ -310,7 +364,7 @@ struct Pages_CompletionVehicleLicense {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入",text:this.vehicleTypeClass ?this.vehicleTypeClass: "" })
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -318,6 +372,9 @@ struct Pages_CompletionVehicleLicense {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.vehicleTypeClass =value
+                    })
                 }
 
                 Divider()
@@ -338,7 +395,7 @@ struct Pages_CompletionVehicleLicense {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.brithDate ? this.brithDate : "请选择")
+                    Text(this.signageDateStart ? this.signageDateStart : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -353,11 +410,11 @@ struct Pages_CompletionVehicleLicense {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectBirthDate,
+                      selected: this.selectSignageStartDate,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectBirthDate = value
-                        this.brithDate = value.toLocaleDateString()
+                        this.selectSignageStartDate = value
+                        this.signageDateStart = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })
@@ -383,7 +440,7 @@ struct Pages_CompletionVehicleLicense {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.brithDate ? this.brithDate : "请选择")
+                    Text(this.signDateEnds ? this.signDateEnds : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -398,11 +455,11 @@ struct Pages_CompletionVehicleLicense {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectBirthDate,
+                      selected: this.selectSignageEndDate,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectBirthDate = value
-                        this.brithDate = value.toLocaleDateString()
+                        this.selectSignageEndDate = value
+                        this.signDateEnds = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })
@@ -428,7 +485,7 @@ struct Pages_CompletionVehicleLicense {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.deadline ? this.deadline : "请选择")
+                    Text(this.expirationDate ? this.expirationDate : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -442,11 +499,11 @@ struct Pages_CompletionVehicleLicense {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectedDate,
+                      selected: this.selectExpirationDate,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectedDate = value
-                        this.deadline = value.toLocaleDateString()
+                        this.selectExpirationDate = value
+                        this.expirationDate = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })
@@ -500,7 +557,7 @@ struct Pages_CompletionVehicleLicense {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入",text:this.qualificationCertificate ? this.qualificationCertificate :"" })
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -508,6 +565,9 @@ struct Pages_CompletionVehicleLicense {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.qualificationCertificate = value
+                    })
 
                 }
 
@@ -529,7 +589,7 @@ struct Pages_CompletionVehicleLicense {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.deadline ? this.deadline : "请选择")
+                    Text(this.passengerTransportQualifications ? this.passengerTransportQualifications : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -540,14 +600,15 @@ struct Pages_CompletionVehicleLicense {
                   }
                   .alignItems(VerticalAlign.Center)
                   .onClick(() => {
-                    DatePickerDialog.show({
-                      start: new Date("2000-1-1"),
-                      end: new Date("2100-12-31"),
-                      selected: this.selectedDate,
-                      onDateAccept: (value: Date) => {
-                        //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectedDate = value
-                        this.deadline = value.toLocaleDateString()
+                    TextPickerDialog.show({
+                      range: this.qualification,
+                      selected: this.selectQualification,
+                      onAccept: (value: TextPickerResult) => {
+                        // 当弹窗再次弹出时显示选中的是上一次确定的选项
+                        this.selectQualification = value.index
+                        console.log(this.selectQualification + '')
+                        // 点击确定后，被选到的文本数据展示到页面 {"value":"黄色","index":1}
+                        this.passengerTransportQualifications = value.value as string
                       }
                     })
                   })
@@ -574,7 +635,7 @@ struct Pages_CompletionVehicleLicense {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.deadline ? this.deadline : "请选择")
+                    Text(this.qualificationCertificateExpirationDate ? this.qualificationCertificateExpirationDate : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -588,11 +649,11 @@ struct Pages_CompletionVehicleLicense {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectedDate,
+                      selected: this.selectExpiration_Date,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectedDate = value
-                        this.deadline = value.toLocaleDateString()
+                        this.selectExpiration_Date = value
+                        this.qualificationCertificateExpirationDate = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })

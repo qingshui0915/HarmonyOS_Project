@@ -19,6 +19,7 @@ import { CheckTicketModel } from "../viewmodel/CheckTicketModel";
 import { PickUpPassengerModel } from "../viewmodel/PickUpPassengerModel";
 import { ServiceToPassengerModel } from "../viewmodel/ServiceToPassengerModel";
 import { ProgressDataModel } from "../viewmodel/ProgressDataModel";
+import { OrderListDetailModel } from "../viewmodel/OrderListDetailModel";
 
 export class Api {
   private static instance: Api;
@@ -60,6 +61,11 @@ export class Api {
   //获取订单列表
   async getOrderListData(status:string,index:number): Promise<Response<OrderListModel>> {
     return requestSync(`api/app/custom-line/Driver-order/order-list`, http.RequestMethod.GET,"",`size=10&index=${index}&state=${status}`);
+  }
+
+  //获取订单详情
+  async getOrderListDetail(orderId:string): Promise<Response<OrderListDetailModel>> {
+    return requestSync(`api/app/custom-line/Driver-order/order-detail/${orderId}`, http.RequestMethod.GET,"");
   }
 
   //获取车辆信息

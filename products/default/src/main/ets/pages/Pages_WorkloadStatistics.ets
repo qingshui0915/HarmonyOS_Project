@@ -152,7 +152,7 @@ struct Pages_WorkloadStatistics {
         .scrollable(false)
         .vertical(false)
         .barMode(BarMode.Fixed)
-        .barWidth(400)
+        // .barWidth(400)
         .barHeight(56)
         .animationDuration(0)
         .onChange((index: number) => {

@@ -1,5 +1,8 @@
 import { TitleBar } from '@smarthane/titlebar';
 import { router } from '@kit.ArkUI';
+import { DateUtils, showToast } from 'base';
+import { camera, cameraPicker } from '@kit.CameraKit';
+import { cameraSelect, fileSelect } from '../utils/Camerautils';
 
 /**
  *保险信息录入
@@ -17,11 +20,37 @@ struct Pages_CompulsoryTrafficInsurance {
     .setTitleName(this.title)
     .setTitleFontColor($r("app.color.text_color1"))
   scroller: Scroller = new Scroller()
-  selectedDate: Date = new Date()
-  selectBirthDate: Date = new Date()
-  @State deadline :string =""
-  @State brithDate :string =""
+  selectedDateOne: Date = new Date()
+  selectedDateTwo: Date = new Date()
+  selectedDateThree: Date = new Date()
+  selectedStartDate: Date = new Date()
+  @State deadlineOne :string =""
+  @State deadlineTwo :string =""
+  @State deadlineThree :string =""
+  @State startDate :string =""
+  @State insuranceCompanyOne :string = ""
+  @State insuranceCompanyTwo :string = ""
+  @State insuranceCompanyThree :string = ""
 
+  @State imageUri: Resource | string | undefined = undefined;
+  private  cameraPosition: Array<camera.CameraPosition> = [
+    camera.CameraPosition.CAMERA_POSITION_UNSPECIFIED, camera.CameraPosition.CAMERA_POSITION_BACK,
+    camera.CameraPosition.CAMERA_POSITION_FRONT, camera.CameraPosition.CAMERA_POSITION_FOLD_INNER
+  ];
+  private  mediaType: Array<cameraPicker.PickerMediaType> = [
+    cameraPicker.PickerMediaType.PHOTO, cameraPicker.PickerMediaType.VIDEO
+  ];
+
+  selectImage() {
+    fileSelect().then((uri: string) => {
+      this.imageUri = uri || '';
+    });
+  }
+  openPhoto(){
+    cameraSelect(this.cameraPosition,this.mediaType,getContext(this)).then((uri: string) => {
+      this.imageUri = uri || '';
+    });
+  }
 
 
   @Builder TitleBars(){
@@ -61,6 +90,31 @@ struct Pages_CompulsoryTrafficInsurance {
                 Image("")
                   .alt($r('app.media.insurance'))
                   .layoutWeight(1)
+                  .onClick(()=>{
+                    ActionSheet.show({
+                      title: '',
+                      message: '',
+                      autoCancel: true,
+                      alignment: DialogAlignment.Bottom,
+                      offset: { dx: 0, dy: -10 },
+                      sheets: [
+                        {
+                          title: '拍照',
+                          action: () => {
+                            this.openPhoto()
+                            showToast("拍照")
+                          }
+                        },
+                        {
+                          title: '选择相册',
+                          action: () => {
+                            this.selectImage()
+                            showToast("选择相册")
+                          }
+                        }
+                      ]
+                    })
+                  })
               }
               .padding(5)
 
@@ -78,7 +132,7 @@ struct Pages_CompulsoryTrafficInsurance {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入",text:this.insuranceCompanyOne?this.insuranceCompanyOne:"" })
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -86,6 +140,9 @@ struct Pages_CompulsoryTrafficInsurance {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.insuranceCompanyOne = value
+                    })
 
                 }
 
@@ -107,7 +164,7 @@ struct Pages_CompulsoryTrafficInsurance {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.brithDate ? this.brithDate : "请选择")
+                    Text(this.startDate ? this.startDate : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -122,11 +179,11 @@ struct Pages_CompulsoryTrafficInsurance {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectBirthDate,
+                      selected: this.selectedStartDate,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectBirthDate = value
-                        this.brithDate = value.toLocaleDateString()
+                        this.selectedStartDate = value
+                        this.startDate = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })
@@ -152,7 +209,7 @@ struct Pages_CompulsoryTrafficInsurance {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.deadline ? this.deadline : "请选择")
+                    Text(this.deadlineOne ? this.deadlineOne : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -166,11 +223,11 @@ struct Pages_CompulsoryTrafficInsurance {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectedDate,
+                      selected: this.selectedDateOne,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectedDate = value
-                        this.deadline = value.toLocaleDateString()
+                        this.selectedDateOne = value
+                        this.deadlineOne = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })
@@ -203,8 +260,12 @@ struct Pages_CompulsoryTrafficInsurance {
               .padding(5)
 
               Row({ space: 10 }) {
-                Image($r('app.media.insurance1'))
+                Image("")
+                  .alt($r('app.media.insurance1'))
                   .layoutWeight(1)
+                  .onClick(()=>{
+                    showToast("点击选择相册or拍照")
+                  })
               }
               .padding(5)
 
@@ -221,7 +282,7 @@ struct Pages_CompulsoryTrafficInsurance {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入",text:this.insuranceCompanyTwo?this.insuranceCompanyTwo:"" })
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -229,6 +290,9 @@ struct Pages_CompulsoryTrafficInsurance {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.insuranceCompanyTwo = value
+                    })
 
                 }
 
@@ -251,7 +315,7 @@ struct Pages_CompulsoryTrafficInsurance {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.deadline ? this.deadline : "请选择")
+                    Text(this.deadlineTwo ? this.deadlineTwo : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -265,11 +329,11 @@ struct Pages_CompulsoryTrafficInsurance {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectedDate,
+                      selected: this.selectedDateTwo,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectedDate = value
-                        this.deadline = value.toLocaleDateString()
+                        this.selectedDateTwo = value
+                        this.deadlineTwo =DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })
@@ -303,8 +367,12 @@ struct Pages_CompulsoryTrafficInsurance {
               .padding(5)
 
               Row({ space: 10 }) {
-                Image($r('app.media.insurance2'))
+                Image("")
+                  .alt($r('app.media.insurance2'))
                   .layoutWeight(1)
+                  .onClick(()=>{
+                    // showToast("点击选择相册or拍照")
+                  })
               }
               .padding(5)
 
@@ -321,7 +389,7 @@ struct Pages_CompulsoryTrafficInsurance {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入",text:this.insuranceCompanyThree?this.insuranceCompanyThree:"" })
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -329,6 +397,9 @@ struct Pages_CompulsoryTrafficInsurance {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.insuranceCompanyThree  = value
+                    })
 
                 }
 
@@ -351,7 +422,7 @@ struct Pages_CompulsoryTrafficInsurance {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.deadline ? this.deadline : "请选择")
+                    Text(this.deadlineThree ? this.deadlineThree : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -365,11 +436,11 @@ struct Pages_CompulsoryTrafficInsurance {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectedDate,
+                      selected: this.selectedDateThree,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectedDate = value
-                        this.deadline = value.toLocaleDateString()
+                        this.selectedDateThree = value
+                        this.deadlineThree = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })

@@ -1,6 +1,6 @@
 import { TitleBar } from '@smarthane/titlebar';
 import { Font, router } from '@kit.ArkUI';
-import { showToast } from 'base';
+import { DateUtils, showToast } from 'base';
 
 /**
  * IDCard 资料填写
@@ -19,7 +19,12 @@ struct Pages_CompletionIdCard {
   selectedDate: Date = new Date()
   selectBirthDate: Date = new Date()
   @State deadline :string =""
-  @State brithDate :string =""
+  @State brithDate :string ="" //出生日期
+  @State userName :string = "" //姓名
+  @State gender :string = ""  //性别
+  @State ethnicGroup :string = "" //民族
+  @State issuingAuthority :string = "" //签发机关
+  @State identificationNumber :string = "" //身份证号
 
 
 
@@ -60,10 +65,18 @@ struct Pages_CompletionIdCard {
               .padding(5)
               .margin({top:10})
               Row({space:10}){
-                Image($r('app.media.card_z'))
+                Image("")
                   .layoutWeight(1)
-                Image($r('app.media.card_f'))
+                  .alt($r('app.media.card_z'))
+                  .onClick(()=>{
+                    showToast("点击选择相册or拍照")
+                  })
+                Image("")
                   .layoutWeight(1)
+                  .alt($r('app.media.card_f'))
+                  .onClick(()=>{
+                    showToast("点击选择相册or拍照")
+                  })
               }
               .padding(5)
               //输入项
@@ -90,13 +103,16 @@ struct Pages_CompletionIdCard {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.userName = value
+                    })
 
                 }
                 Divider()
                   .height(1)
                   .margin({left:20,right:20})
                   .backgroundColor($r('app.color.layout_dividing_lines_bg_color'))
-                //姓别
+                //性别
                 Row(){
                   Row({space:5}){
                     Text("*")
@@ -118,12 +134,16 @@ struct Pages_CompletionIdCard {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.gender = value
+                    })
 
                 }
                 Divider()
                   .height(1)
                   .margin({left:20,right:20})
                   .backgroundColor($r('app.color.layout_dividing_lines_bg_color'))
+
                 //出生日期
                 Row(){
                   Row({space:5}){
@@ -157,7 +177,7 @@ struct Pages_CompletionIdCard {
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
                         this.selectBirthDate = value
-                        this.brithDate = value.toLocaleDateString()
+                        this.brithDate = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })
@@ -191,6 +211,9 @@ struct Pages_CompletionIdCard {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.ethnicGroup = value
+                    })
 
                 }
                 Divider()
@@ -220,6 +243,9 @@ struct Pages_CompletionIdCard {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value) =>{
+                      this.issuingAuthority = value
+                    })
 
                 }
                 Divider()
@@ -249,6 +275,9 @@ struct Pages_CompletionIdCard {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.identificationNumber = value
+                    })
 
                 }
                 Divider()
@@ -287,7 +316,7 @@ struct Pages_CompletionIdCard {
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
                         this.selectedDate = value
-                        this.deadline = value.toLocaleDateString()
+                        this.deadline = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })

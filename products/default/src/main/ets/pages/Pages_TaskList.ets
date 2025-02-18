@@ -187,7 +187,7 @@ struct Pages_TaskList {
       .scrollable(false)
       .vertical(false)
       .barMode(BarMode.Fixed)
-      .barWidth(400)
+      // .barWidth(400)
       .barHeight(40)
       .animationDuration(200)
       .onChange((index: number) => {
@@ -529,7 +529,7 @@ struct Pages_TaskList {
         .scrollable(false)
         .vertical(false)
         .barMode(BarMode.Fixed)
-        .barWidth(400)
+        // .barWidth(400)
         .barHeight(50)
         .animationDuration(0)
         .onChange((index: number) => {

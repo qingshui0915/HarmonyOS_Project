@@ -11,6 +11,5 @@
     "home": "file:../../features/home",
     "@smarthane/titlebar": "^1.0.3",
     "@ohos/imageknife": "^3.2.0",
-    "watermark": "file:../../casesfeature/watermark"
   }
 }

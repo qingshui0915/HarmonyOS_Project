@@ -84,7 +84,6 @@ struct Pages_All_TaskList {
         Refresh({refreshing:$$this.refreshing}){
           List({space:10}){
             ForEach(this.orderListItem,(item:Item,index:number)=>{
-
               ListItem(){
                 Column(){
                   Row(){
@@ -175,10 +174,17 @@ struct Pages_All_TaskList {
                   .margin({top:10,left:16})
 
                 }
+                .margin({left:20,right:20})
                 .padding(10)
                 .borderRadius(10)
                 .backgroundColor($r("app.color.white"))
               }
+              .onClick(()=>{
+                router.replaceUrl({
+                  url:"pages/Pages_TaskDetail",
+                  params:{value:item.Id}
+                })
+              })
 
             },(item:Item)=>item.Id)
 
@@ -266,7 +272,7 @@ struct Pages_All_TaskList {
     this.status = router.getParams() as string
     this.currentIndex = Number(this.status["value"])
     this.selectedIndex = Number(this.status["value"])
-    console.log("页面传值1===>"+JSON.stringify(this.status["value"]))
+    // console.log("页面传值1===>"+JSON.stringify(this.status["value"]))
     // console.log("页面传值2===>"+JSON.stringify(this.currentIndex))
     // console.log("页面传值3===>"+JSON.stringify(this.selectedIndex))
     //请求
@@ -301,19 +307,19 @@ struct Pages_All_TaskList {
         .scrollable(false)
         .vertical(false)
         .barMode(BarMode.Fixed)
-        .barWidth(360)
+        // .barWidth(360)
         .barHeight(56)
         .animationDuration(0)
         .onChange((index: number) => {
-          console.log("22222"+JSON.stringify(index))
+          // console.log("22222"+JSON.stringify(index))
           // currentIndex控制TabContent显示页签
           this.currentIndex = index
           this.selectedIndex = index
-          console.log("当前显示的是=>>"+JSON.stringify(this.selectedIndex))
-          console.log("当前点击的是=>>"+JSON.stringify(this.currentIndex))
+          // console.log("当前显示的是=>>"+JSON.stringify(this.selectedIndex))
+          // console.log("当前点击的是=>>"+JSON.stringify(this.currentIndex))
           this.getOrderListData(this.currentIndex.toString())
         })
-        .width(360)
+        // .width(360)
         .height("90%")
       }
       .width('100%')

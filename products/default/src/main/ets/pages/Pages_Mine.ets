@@ -208,7 +208,6 @@ struct Pages_Mine {
           .alignItems(VerticalAlign.Center)
           .justifyContent(FlexAlign.SpaceBetween)
           .margin({left:20,right:20})
-          .width("90%")
           .height(50)
           .onClick(()=>{
               router.pushUrl({
@@ -226,6 +225,7 @@ struct Pages_Mine {
                 .fontColor($r("app.color.text_h1"))
                 .fontSize(20)
             }
+            .layoutWeight(1)
             Row({space:10}){
               Text("本月接乘客数")
                 .fontColor($r("app.color.text_color1"))
@@ -235,19 +235,20 @@ struct Pages_Mine {
                 .fontColor($r("app.color.text_h1"))
                 .fontSize(20)
             }
+            .layoutWeight(1)
           }
           .justifyContent(FlexAlign.SpaceBetween)
           .margin({left:30,right:30,top:10,bottom:10})
-          .width("83%")
           .height(30)
 
           //账户余额显示
           Column(){
             Stack({alignContent:Alignment.TopStart}){
               Image($r("app.media.union"))
+                .width('100%')
                 .height(120)
                 .borderRadius({topLeft:10,topRight:10})
-              Column({space:10}){
+              Column({space:15}){
                 Text("账户余额")
                   .fontColor($r("app.color.text_color1"))
                   .fontSize(17)
@@ -326,8 +327,8 @@ struct Pages_Mine {
               .alignItems(VerticalAlign.Center)
               .justifyContent(FlexAlign.Center)
             }
-            .width("90%")
-            .margin({left:20,right:20})
+            .width('90%')
+            .margin({left:20,right:20,top:10})
             .alignItems(VerticalAlign.Center)
             .justifyContent(FlexAlign.SpaceBetween)
             .onClick(()=>{
@@ -450,7 +451,6 @@ struct Pages_Mine {
             .width("100%")
 
           }
-          .width("90%")
           .margin({top:20,left:20,right:20})
           .borderRadius(10)
           .backgroundColor(Color.White)

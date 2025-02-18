@@ -1,5 +1,6 @@
 import { TitleBar } from '@smarthane/titlebar';
 import { router } from '@kit.ArkUI';
+import { DateUtils, showToast } from 'base';
 
 @Entry
 @Component
@@ -12,10 +13,11 @@ struct Pages_CompletionDriverCard {
     })
     .setTitleName(this.title)
     .setTitleFontColor($r("app.color.text_color1"))
-  selectedDate: Date = new Date()
-  selectBirthDate: Date = new Date()
-  @State deadline :string =""
-  @State brithDate :string =""
+  selectedEndDate: Date = new Date()
+  selectStartDate: Date = new Date()
+  @State endDate :string =""
+  @State startDate :string =""
+  @State quasiDrivingType :string =""
 
 
 
@@ -56,10 +58,18 @@ struct Pages_CompletionDriverCard {
               .padding(5)
               .margin({top:10})
               Row({space:10}){
-                Image($r('app.media.driver'))
+                Image("")
                   .layoutWeight(1)
-                Image($r('app.media.drivercard_f'))
+                  .alt($r('app.media.driver'))
+                  .onClick(()=>{
+                    showToast("点击选择相册or拍照")
+                  })
+                Image("")
                   .layoutWeight(1)
+                  .alt($r('app.media.drivercard_f'))
+                  .onClick(()=>{
+                    showToast("点击选择相册or拍照")
+                  })
               }
               .padding(5)
               //输入项
@@ -86,6 +96,9 @@ struct Pages_CompletionDriverCard {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.quasiDrivingType = value
+                    })
 
                 }
                 Divider()
@@ -106,7 +119,7 @@ struct Pages_CompletionDriverCard {
                   .alignItems(VerticalAlign.Center)
 
                   Row({space:3}){
-                    Text(this.brithDate ? this.brithDate : "请选择")
+                    Text(this.startDate ? this.startDate : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -121,11 +134,11 @@ struct Pages_CompletionDriverCard {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectBirthDate,
+                      selected: this.selectStartDate,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectBirthDate = value
-                        this.brithDate = value.toLocaleDateString()
+                        this.selectStartDate = value
+                        this.startDate = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })
@@ -150,7 +163,7 @@ struct Pages_CompletionDriverCard {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
                   Row({space:3}){
-                    Text(this.deadline ? this.deadline : "请选择")
+                    Text(this.endDate ? this.endDate : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -164,11 +177,11 @@ struct Pages_CompletionDriverCard {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectedDate,
+                      selected: this.selectedEndDate,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectedDate = value
-                        this.deadline = value.toLocaleDateString()
+                        this.selectedEndDate = value
+                        this.endDate = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })
@@ -200,6 +213,9 @@ struct Pages_CompletionDriverCard {
               .margin({left:30,right:30,top:25})
               .borderRadius(8)
               .backgroundColor($r('app.color.color_shubihong'))
+              .onClick(()=>{
+                showToast("点击提交")
+              })
           }
         }
       }

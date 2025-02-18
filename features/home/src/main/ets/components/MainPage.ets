@@ -324,7 +324,6 @@ export struct MainPage {
           Row(){
             this.topMassageInfo()
           }
-          .width("90%")
           .height(90)
           .margin({left:18,right:18,top:10})
           .backgroundColor($r("app.color.start_window_background"))
@@ -340,7 +339,6 @@ export struct MainPage {
               .margin({left:8})
           }
           .padding(8)
-          .width("90%")
           .height(35)
           .margin({left:18,right:18,top:10})
           .backgroundColor($r("app.color.start_window_background"))
@@ -350,7 +348,6 @@ export struct MainPage {
           Column(){
             this.taskList()
           }
-          .width("90%")
           .margin({left:18,right:18,top:10})
           .backgroundColor($r("app.color.start_window_background"))
           .borderRadius(10)

@@ -1,6 +1,6 @@
 import { TitleBar } from '@smarthane/titlebar'
 import { componentSnapshot, promptAction, router } from '@kit.ArkUI';
-import { showToast } from 'base';
+import { NetConstants, showToast } from 'base';
 import { MMKV } from "@tencent/mmkv/src/main/ets/utils/MMKV";
 import { abilityAccessCtrl, common } from '@kit.AbilityKit';
 import image from '@ohos.multimedia.image';
@@ -21,6 +21,7 @@ struct Pages_PlaceOrder {
     .setTitleFontColor($r("app.color.text_color1"))
     .setTitleBarBackground(Color.Transparent)
   @State QRUrl:string = ""
+  private qrCodeId: string = "qrCodeId" // 二维码 ID
   private appContext: common.Context = getContext(this);
   private atManager = abilityAccessCtrl.createAtManager();
   @State pixelMap: image.PixelMap | undefined = undefined;
@@ -43,7 +44,7 @@ struct Pages_PlaceOrder {
   aboutToAppear(): void {
     let userId =  MMKV.defaultMMKV().decodeString("USER_ID")
     let userName = MMKV.defaultMMKV().decodeString("NAME")
-    this.QRUrl = `/customLine/pages/index/index?type=3&id=${userId}"&name=${userName?.charAt(0)}师傅`
+    this.QRUrl = NetConstants.QR_BASE_URL+`/customLine/pages/index/index?type=3&id=${userId}"&name=${userName?.charAt(0)}师傅`
   }
 
 
@@ -67,6 +68,7 @@ struct Pages_PlaceOrder {
                   .backgroundColor(Color.Transparent)
                   .width(200)
                   .height(200)
+                  .id(this.qrCodeId)
                 Row({space:50}){
                   SaveButton()
                     .onClick(async (event: ClickEvent, result: SaveButtonOnClickResult)=>{
@@ -94,7 +96,11 @@ struct Pages_PlaceOrder {
                         }
 
                       } else { // 如果保存失败
-                        showToast("设置权限失败")
+                        promptAction.showToast({
+                          // 弹出提示消息
+                          message: '设置权限失败！', // 提示内容
+                          duration: 2000 // 持续时间
+                        })
                       }
                     })
                   Button("保存相册")
@@ -122,79 +128,6 @@ struct Pages_PlaceOrder {
         }
       }
     }
-
-
-
-    // Stack(){
-    //   // Image($r("app.media.code_bg"))
-    //   //   .width("100%")
-    //   //   .height("100%")
-    //   RelativeContainer(){
-    //     Column(){
-    //       this.TitleBars()
-    //     }
-    //     Row(){
-    //       RelativeContainer(){
-    //
-    //         Stack() {
-    //           QRCode(this.QRUrl)
-    //             .backgroundColor(Color.Transparent)
-    //             .width(200)
-    //             .height(200)
-    //           Row({space:50}){
-    //             Button("保存相册")
-    //               .type(ButtonType.Normal)
-    //               .backgroundColor($r("app.color.color_shubihong"))
-    //               .onClick(()=>{
-    //                 showToast("点击保存相册")
-    //               })
-    //
-    //             Button("打开微信")
-    //               .type(ButtonType.Normal)
-    //               .backgroundColor($r("app.color.button_qr_code_bg"))
-    //               .onClick(()=>{
-    //                 showToast("跳转打开微信")
-    //               })
-    //           }
-    //           .margin({top:420})
-    //         }
-    //         .height('100%')
-    //         .width('100%')
-    //
-    //       }
-    //     }
-    //     .id("qr_code")
-    //
-    //     // Row(){
-    //     //   Button("保存相册")
-    //     //     .type(ButtonType.Normal)
-    //     //     .width(80)
-    //     //     .backgroundColor($r("app.color.color_shubihong"))
-    //     //     .onClick(()=>{
-    //     //
-    //     //     })
-    //     //
-    //     //   Button("打开微信")
-    //     //     .type(ButtonType.Normal)
-    //     //     .width(80)
-    //     //     .backgroundColor($r("app.color.button_qr_code_bg"))
-    //     //     .onClick(()=>{
-    //     //
-    //     //     })
-    //     // }
-    //     // .alignRules({
-    //     //   // top: { anchor: "qr_code", align: VerticalAlign.Bottom },
-    //     //   bottom: { anchor: "__container__", align: VerticalAlign.Bottom },
-    //     //   // left: { anchor: "__container__", align: HorizontalAlign.Start },
-    //     //   // right: { anchor: "row1", align: HorizontalAlign.End }
-    //     // })
-    //   }
-    //   .width("100%")
-    //   .height("100%")
-    //   .alignRules({
-    //     center:{anchor:"__container__",align:VerticalAlign.Center}
-    //   })
-    // }
 
 
 

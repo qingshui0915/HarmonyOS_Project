@@ -22,6 +22,7 @@
     "pages/Pages_CompletionDriverCard",
     "pages/Pages_CompletionTravelCard",
     "pages/Pages_CompletionVehicleLicense",
-    "pages/Pages_CompulsoryTrafficInsurance"
+    "pages/Pages_CompulsoryTrafficInsurance",
+    "pages/Pages_TaskDetail"
   ]
 }

@@ -14,6 +14,13 @@
         "usedScene": {
 
         }
+      },
+      {
+        "name": "ohos.permission.READ_MEDIA",
+        "reason": "$string:READ_IMAGEVIDEO_info",
+        "usedScene" : {
+
+        }
       }
     ],
     "deviceTypes": [

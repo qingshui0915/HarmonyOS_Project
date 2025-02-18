@@ -1,5 +1,8 @@
 import { TitleBar } from '@smarthane/titlebar';
 import { router } from '@kit.ArkUI';
+import { DateUtils, showToast } from 'base';
+import { EnumSurveyVehiclePlateColor } from '../enum/EnumSurveyVehiclePlateColor';
+import { EnumTypeOfEnergy } from '../enum/EnumTypeOfEnergy';
 
 @Entry
 @Component
@@ -14,9 +17,27 @@ struct Pages_CompletionTravelCard {
     .setTitleFontColor($r("app.color.text_color1"))
   scroller: Scroller = new Scroller()
   selectedDate: Date = new Date()
-  selectBirthDate: Date = new Date()
-  @State deadline :string =""
-  @State brithDate :string =""
+  selectRegistrationDate: Date = new Date()
+  selectAnnualReviewDate: Date = new Date()
+  selectExpirationDate: Date = new Date()
+  private select: number | number[] = 0
+  private selectTypeOfEnergy: number | number[] = 0
+  @State newEnumPlateColor:string[] =[]//车牌颜色
+  @State newEnumTypeOfEnergy:string[] =[]//能源类型
+  @State EnumPlateColor:EnumSurveyVehiclePlateColor[] =EnumSurveyVehiclePlateColor.values()
+  @State EnumTypeOfEnergy:EnumTypeOfEnergy[] =EnumTypeOfEnergy.values()
+  @State registrationDate  :string ="" //车辆注册日期
+  @State registration_Date :string ="" //车辆注册日期==>赋值
+  @State licensePlateNumber :string = "" //车牌号
+  @State bodyColor :string = "" //车身颜色
+  @State licensePlateColor :string = "" //车牌颜色
+  @State vehicleModel :string = "" //车辆型号
+  @State vehicleBrand :string = "" //车辆品牌
+  @State typeOfEnergy :string = "" //能源类型
+  @State AnnualReviewDate :string = "" //年审日期 -->赋值
+  @State Annual_Review_Date :string = "" //年审日期
+  @State expirationDate :string = "" //过期日期 -->赋值
+  @State expiration_Date :string = "" //过期日期
 
 
 
@@ -26,6 +47,23 @@ struct Pages_CompletionTravelCard {
     }
 
   }
+
+
+  aboutToAppear(): void {
+    // console.log("22222==>"+JSON.stringify(EnumSurveyVehiclePlateColorHelper.values()))
+    // console.log("22222==>"+JSON.stringify(this.EnumPlateColor))
+    for (let index = 0; index < this.EnumPlateColor.length; index++) {
+      this.newEnumPlateColor[index] = this.EnumPlateColor[index].name
+    }
+
+    for (let i = 0; i <this.EnumTypeOfEnergy.length; i++) {
+      this.newEnumTypeOfEnergy[i] = this.EnumTypeOfEnergy[i].name
+    }
+    console.log("33333==>"+JSON.stringify(this.newEnumPlateColor))
+    console.log("44444==>"+JSON.stringify(this.newEnumTypeOfEnergy))
+  }
+
+
 
   build() {
     Flex({direction:FlexDirection.Column}) {
@@ -57,10 +95,18 @@ struct Pages_CompletionTravelCard {
               .padding(5)
 
               Row({ space: 10 }) {
-                Image($r('app.media.travel'))
+                Image("")
                   .layoutWeight(1)
-                Image($r('app.media.travelcard_f'))
+                  .alt($r('app.media.travel'))
+                  .onClick(()=>{
+                    showToast("点击拍照或者打开相册")
+                  })
+                Image("")
                   .layoutWeight(1)
+                  .alt($r('app.media.travelcard_f'))
+                  .onClick(()=>{
+                    showToast("点击拍照或者打开相册")
+                  })
               }
               .padding(5)
 
@@ -79,8 +125,12 @@ struct Pages_CompletionTravelCard {
               .margin({ top: 5 })
 
               Row({ space: 10 }) {
-                Image($r('app.media.car_photo_icon'))
+                Image("")
                   .layoutWeight(1)
+                  .alt($r('app.media.car_photo_icon'))
+                  .onClick(()=>{
+                    showToast("点击拍照或者打开相册")
+                  })
                 Image($r('app.media.card_f'))
                   .visibility(Visibility.Hidden)
                   .layoutWeight(1)
@@ -103,7 +153,7 @@ struct Pages_CompletionTravelCard {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入" ,text:this.licensePlateNumber})
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -111,6 +161,9 @@ struct Pages_CompletionTravelCard {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.licensePlateNumber = value
+                    })
 
                 }
 
@@ -140,6 +193,9 @@ struct Pages_CompletionTravelCard {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.bodyColor = value
+                    })
 
                 }
 
@@ -161,7 +217,7 @@ struct Pages_CompletionTravelCard {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.brithDate ? this.brithDate : "请选择")
+                    Text(this.licensePlateColor ? this.licensePlateColor : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -173,14 +229,15 @@ struct Pages_CompletionTravelCard {
                   .justifyContent(FlexAlign.End)
                   .layoutWeight(1)
                   .onClick(() => {
-                    DatePickerDialog.show({
-                      start: new Date("2000-1-1"),
-                      end: new Date("2100-12-31"),
-                      selected: this.selectBirthDate,
-                      onDateAccept: (value: Date) => {
-                        //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectBirthDate = value
-                        this.brithDate = value.toLocaleDateString()
+                    TextPickerDialog.show({
+                      range: this.newEnumPlateColor,
+                      selected: this.select,
+                      onAccept: (value: TextPickerResult) => {
+                        // 当弹窗再次弹出时显示选中的是上一次确定的选项
+                        this.select = value.index
+                        console.log(this.select + '')
+                        // 点击确定后，被选到的文本数据展示到页面 {"value":"黄色","index":1}
+                        this.licensePlateColor = value.value as string
                       }
                     })
                   })
@@ -215,6 +272,9 @@ struct Pages_CompletionTravelCard {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.vehicleModel = value
+                    })
 
                 }
 
@@ -245,6 +305,9 @@ struct Pages_CompletionTravelCard {
                     .fontSize(13)
                     .textAlign(TextAlign.End)
                     .layoutWeight(1)
+                    .onChange((value)=>{
+                      this.vehicleBrand = value
+                    })
 
                 }
 
@@ -267,7 +330,7 @@ struct Pages_CompletionTravelCard {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.brithDate ? this.brithDate : "请选择")
+                    Text(this.typeOfEnergy ? this.typeOfEnergy : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -279,14 +342,15 @@ struct Pages_CompletionTravelCard {
                   .justifyContent(FlexAlign.End)
                   .layoutWeight(1)
                   .onClick(() => {
-                    DatePickerDialog.show({
-                      start: new Date("2000-1-1"),
-                      end: new Date("2100-12-31"),
-                      selected: this.selectBirthDate,
-                      onDateAccept: (value: Date) => {
-                        //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectBirthDate = value
-                        this.brithDate = value.toLocaleDateString()
+                    TextPickerDialog.show({
+                      range: this.newEnumTypeOfEnergy,
+                      selected: this.selectTypeOfEnergy,
+                      onAccept: (value: TextPickerResult) => {
+                        // 当弹窗再次弹出时显示选中的是上一次确定的选项
+                        this.selectTypeOfEnergy = value.index
+                        console.log(this.selectTypeOfEnergy + '')
+                        // 点击确定后，被选到的文本数据展示到页面 {"value":"黄色","index":1}
+                        this.typeOfEnergy = value.value as string
                       }
                     })
                   })
@@ -313,7 +377,7 @@ struct Pages_CompletionTravelCard {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.brithDate ? this.brithDate : "请选择")
+                    Text(this.registration_Date ? this.registration_Date : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -328,11 +392,11 @@ struct Pages_CompletionTravelCard {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectBirthDate,
+                      selected: this.selectRegistrationDate,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectBirthDate = value
-                        this.brithDate = value.toLocaleDateString()
+                        this.selectRegistrationDate = value
+                        this.registrationDate = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })
@@ -358,7 +422,7 @@ struct Pages_CompletionTravelCard {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.brithDate ? this.brithDate : "请选择")
+                    Text(this.AnnualReviewDate ? this.AnnualReviewDate : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -373,11 +437,11 @@ struct Pages_CompletionTravelCard {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectBirthDate,
+                      selected: this.selectAnnualReviewDate,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectBirthDate = value
-                        this.brithDate = value.toLocaleDateString()
+                        this.selectAnnualReviewDate = value
+                        this.AnnualReviewDate = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })
@@ -405,7 +469,7 @@ struct Pages_CompletionTravelCard {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.deadline ? this.deadline : "请选择")
+                    Text(this.expirationDate ? this.expirationDate : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -419,11 +483,11 @@ struct Pages_CompletionTravelCard {
                     DatePickerDialog.show({
                       start: new Date("2000-1-1"),
                       end: new Date("2100-12-31"),
-                      selected: this.selectedDate,
+                      selected: this.selectExpirationDate,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
-                        this.selectedDate = value
-                        this.deadline = value.toLocaleDateString()
+                        this.selectExpirationDate = value
+                        this.expirationDate = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })

@@ -32,6 +32,10 @@
     {
       "name": "WRITE_IMAGEVIDEO_info",
       "value": "保存功能需要该权限"
+    },
+    {
+      "name": "READ_IMAGEVIDEO_info",
+      "value": "获取相册功能需要该权限"
     }
   ]
 }

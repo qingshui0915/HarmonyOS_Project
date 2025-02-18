@@ -316,7 +316,6 @@ struct Pages_TaskOrder {
 
                 }
                 .backgroundColor(this.sevenDateList[index].select ? $r("app.color.color_shubihong") :$r("app.color.white"))
-
                 .width(40)
                 .height(50)
                 .borderRadius(3)
