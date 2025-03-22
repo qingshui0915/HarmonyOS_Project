@@ -3,7 +3,7 @@ import { TitleBar } from '@smarthane/titlebar'
 import { router } from '@kit.ArkUI';
 import { JSON } from '@kit.ArkTS';
 import { HomeIndexModel } from 'base/src/main/ets/viewmodel/HomeIndexModel';
-import { MMKV } from '../../../../../../common/base/oh_modules/@tencent/mmkv/src/main/ets/utils/MMKV';
+import { MMKV } from '@tencent/mmkv';
 import { HomeDataModel, Data,LineList } from 'base/src/main/ets/viewmodel/HomeDataModel';
 import { common } from '@kit.AbilityKit';
 
@@ -162,9 +162,9 @@ export struct MainPage {
         .alignItems(HorizontalAlign.Center)
         .justifyContent(FlexAlign.Center)
       }
-      .onClick(()=>{
-        showToast("点击今日人数")
-      })
+      // .onClick(()=>{
+      //   showToast("点击今日人数")
+      // })
     }
 
     List(){
@@ -173,12 +173,13 @@ export struct MainPage {
           Row(){
             RelativeContainer(){
               Row(){
-                Text(this.homeItemData.length.toString())
+                Text(this.homeData.data.LineList[index].OrderCount.toString())
                   .fontColor($r("app.color.white"))
                   .fontSize(12)
                   .width(20)
                   .height(20)
                   .textAlign(TextAlign.Center)
+                  .borderRadius(3)
                   .backgroundColor($r("app.color.text_task_number_color2"))
               }
               .alignRules({
@@ -217,6 +218,7 @@ export struct MainPage {
                   .backgroundColor($r("app.color.color_shubihong"))
                   .width(25)
                   .height(25)
+                  .borderRadius(3)
 
               }
               .width("35%")
@@ -233,6 +235,7 @@ export struct MainPage {
           .width("94%")
           .height(45)
           .backgroundColor($r("app.color.text_task_list_bg"))
+          .borderRadius(3)
         }
         .onClick(()=>{
           // showToast("点击条目事件调用")
@@ -269,9 +272,11 @@ export struct MainPage {
     let res = await Api.net().getHomeIndexData();
     if (res.isSuccessWithData()) {
       this.indexData = (res.data as HomeIndexModel);
+
       if (this.indexData.data.Code == 200) {
         LoadingUtils.hideLoading();
         MMKV.defaultMMKV().encodeString("CAR_ID",this.indexData.data.CarId)
+        console.log("打印首页数据请求1====>"+JSON.stringify(this.indexData))
         //请求首页待服务数据展示
         this.getHomeDatas(this.indexData.data.CarId)
       }else if (this.indexData.data.Code ==302){//未绑定车辆
@@ -290,6 +295,7 @@ export struct MainPage {
     let res = await Api.net().getHomeDatas(carId);
     if (res.isSuccessWithData()) { //200
       if (res.data?.statusCode==200) {
+        console.log("打印首页数据请求2====>"+JSON.stringify(this.homeData))
         LoadingUtils.hideLoading();
         this.homeData = res.data as HomeDataModel
         this.homeTop = this.homeData.data
@@ -337,7 +343,10 @@ export struct MainPage {
               .fontSize(15)
               .fontColor($r("app.color.text_h1"))
               .margin({left:8})
+              .layoutWeight(1)
           }
+          .alignItems(VerticalAlign.Center)
+          .justifyContent(FlexAlign.Center)
           .padding(8)
           .height(35)
           .margin({left:18,right:18,top:10})

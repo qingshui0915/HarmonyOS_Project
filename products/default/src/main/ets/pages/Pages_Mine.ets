@@ -35,6 +35,7 @@ struct Pages_Mine {
       }
     }
     .width('100%')
+
   }
 
 
@@ -163,25 +164,19 @@ struct Pages_Mine {
 
 
   build() {
-    Stack({alignContent:Alignment.TopStart}) {
-      Image($r("app.media.my_bg"))
-        .width("100%")
-        .height("100%")
+    Stack() {
+      // Image($r("app.media.my_bg"))
+      //   .width("100%")
+      //   .height("100%")
+
       Scroll(this.scroller) {
-        Flex({ direction: FlexDirection.Column }) {
+        Flex({direction:FlexDirection.Column}) {
           Column() {
             this.TitleBars()
           }
+          .height(100)
           Row(){
             Row(){
-                // ImageKnifeComponent({
-                //   imageKnifeOption:{
-                //     loadSrc:this.imgs
-                //   }
-                // })
-                //   .borderRadius(25)
-                //   .width(50)
-                //   .height(50)
               // //头像
               Image(this.imgs)
                 .borderRadius(25)
@@ -197,11 +192,13 @@ struct Pages_Mine {
                   .fontColor($r("app.color.text_h1"))
                   .fontSize(13)
               }
+              .width('80%')
               .margin({left:10})
               .alignItems(HorizontalAlign.Start)
             }
 
             Image($r("app.media.arrow_right"))
+              .margin({right:20})
               .width(18)
               .height(25)
           }
@@ -210,9 +207,9 @@ struct Pages_Mine {
           .margin({left:20,right:20})
           .height(50)
           .onClick(()=>{
-              router.pushUrl({
-                url:"pages/Pages_MyInfo"
-              })
+            router.pushUrl({
+              url:"pages/Pages_MyInfo"
+            })
           })
           //接客
           Row({space:20}){
@@ -456,7 +453,7 @@ struct Pages_Mine {
           .backgroundColor(Color.White)
 
           //Copyright版本号说明
-          RelativeContainer(){
+          Column(){
             Column({space:3}){
               Text("Copyright ©2023")
                 .fontColor($r("app.color.text_h1"))
@@ -471,19 +468,25 @@ struct Pages_Mine {
             .width("100%")
             .alignItems(HorizontalAlign.Center)
           }
-          .margin({top:120})
-          .alignRules({
-            center:{anchor: "__container__",align:VerticalAlign.Bottom},
-          })
+          .width("100%")
+          .margin({top:16, bottom:16})
+          .alignItems(HorizontalAlign.Center)
         }
+        .width('100%')
+        .height('100%')
+
+
       }
+      .width('100%')
+      .height('100%')
       .scrollable(ScrollDirection.Vertical)
       .scrollBar(BarState.Off)
-      .edgeEffect(EdgeEffect.Spring)
+      .edgeEffect(EdgeEffect.None)
     }
+    .backgroundImage($r("app.media.my_bg"))
+    .backgroundImageSize(ImageSize.Cover)
     .width("100%")
-    .height("100%")
-
+    .height('100%')
 
   }
 

@@ -1,7 +1,7 @@
-import { router } from '@kit.ArkUI';
+import { promptAction, router } from '@kit.ArkUI';
 import { TitleBar } from '@smarthane/titlebar';
 import { MMKV } from '@tencent/mmkv';
-import { Api, EventBus, PhoneNumberUtils, showToast } from 'base';
+import { Api, EventBus, LoadingUtils, PhoneNumberUtils, showToast } from 'base';
 import { AllOrderListModel, Data } from 'base/src/main/ets/viewmodel/AllOrderListModel';
 import { PickUpPassengerModel } from 'base/src/main/ets/viewmodel/PickUpPassengerModel';
 import { ServiceToPassengerModel } from 'base/src/main/ets/viewmodel/ServiceToPassengerModel';
@@ -9,11 +9,18 @@ import { AlreadyTaskListView } from '../view/AlreadyTaskListView';
 import { EmptyView } from '../view/EmptyView';
 import { NotTaskListView } from '../view/NotTaskListView';
 import { common } from '@kit.AbilityKit';
-import { BusinessError } from '@kit.BasicServicesKit';
+import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 import { call, observer } from '@kit.TelephonyKit';
+import { PickUpMapView } from '../view/PickUpMapView'
+import { DropOffMapView } from '../view/DropOffMapView';
+import { JSON } from '@kit.ArkTS';
+import { MapsInitializer } from '@amap/amap_lbs_map3d';
 
 // 测试: eventBus 发送和接收的数据模型
 interface DeliverToPassengerModule {
+  name: string
+}
+interface InputCodeModule {
   name: string
 }
 @Entry
@@ -49,8 +56,6 @@ struct Pages_TaskList {
   @State serviceTo :ServiceToPassengerModel = new ServiceToPassengerModel()
 
 
-
-
   async getTaskList(){
     const carId = MMKV.defaultMMKV().decodeString("CAR_ID") as string
     this.showLoading = true;
@@ -59,38 +64,40 @@ struct Pages_TaskList {
     if (res.isSuccessWithData()) {
       this.allOrderList =  res.data as AllOrderListModel
       this.disposeOrderList = this.allOrderList.data
-
+      console.log("打印列表数据集合===>"+JSON.stringify(this.disposeOrderList))
     }else{
       showToast(res.message)
     }
   }
 
   async getPickUpPassengers(orderId:string){
-    this.showLoading = true;
+    LoadingUtils.showLoading("加载中...");
     let res = await Api.net().pickUpPassenger(orderId);
-    this.showLoading = false;
     if (res.isSuccessWithData()) {
       this.pickUp  =  res.data as PickUpPassengerModel
       if (this.pickUp.statusCode == 200) {
+        LoadingUtils.hideLoading();
         //刷新列表
         this.getTaskList()
       }else{
+        LoadingUtils.hideLoading();
         showToast(this.pickUp.message)
       }
     }else{
-
+      LoadingUtils.hideLoading();
+      showToast(res.message)
     }
 
   }
 
 
   async getDeliverToPassengers(orderId:string){
-    this.showLoading = true;
+    LoadingUtils.showLoading("加载中...");
     let res = await Api.net().serviceToPassenger(orderId);
-    this.showLoading = false;
     if (res.isSuccessWithData()) {
       this.serviceTo = res.data as ServiceToPassengerModel
       if (this.serviceTo.statusCode == 200) {
+        LoadingUtils.hideLoading();
         //刷新列表
         this.getTaskList()
         //测试发送事件
@@ -99,13 +106,29 @@ struct Pages_TaskList {
         }
         EventBus.send('DeliverToPassenger', eventData)
       } else {
-        showToast(this.pickUp.message)
+        LoadingUtils.hideLoading();
+        showToast(this.serviceTo.message)
       }
     }else{
-
+      LoadingUtils.hideLoading();
+      showToast(res.message)
     }
-
   }
+
+
+  onPageShow() :void {
+    EventBus.listen<InputCodeModule>('InputCodeModule', (data) => {
+      if (data !== undefined) {
+        if (data.name == "检票成功") {
+          console.log("触发了吗===>"+JSON.stringify(data))
+          //刷新列表
+          this.getTaskList()
+        }
+      }
+    })
+  }
+
+
 
   onPageHide(): void {
     EventBus.cancel('DeliverToPassenger')
@@ -118,8 +141,6 @@ struct Pages_TaskList {
     this.orderId =  router.getParams() as string
     console.log("页面传参==>"+JSON.stringify(this.orderId))
     this.getTaskList()
-
-
 
   }
 
@@ -361,7 +382,7 @@ struct Pages_TaskList {
                       .height(40)
                       .margin({right:15})
                       .onClick(()=>{
-                        showToast("这里调用拨号功能！")
+                        // showToast("这里调用拨号功能！")
                         let isSupport = call.hasVoiceCapability();
                         if (isSupport) {
                           // 如果设备支持呼叫能力，则继续跳转到拨号界面，并显示拨号的号码
@@ -438,6 +459,7 @@ struct Pages_TaskList {
             }
             return { offsetRemain: offset };
           })
+          .margin({bottom:30})
           .scrollBar(BarState.Off)
           // 开启边缘滑动效果
           .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
@@ -455,14 +477,13 @@ struct Pages_TaskList {
           this.getTaskList()
           setTimeout(() => {
             this.refreshing = false;
-          }, 4000)
+          }, 3000)
         })
 
       }
     }
     .width("100%")
   }
-
 
   build() {
     Column() {
@@ -499,16 +520,20 @@ struct Pages_TaskList {
                     .fontSize(14)
                     .onClick(()=>{
                       //TODO:====Jump to the page
-                      showToast("跳转去扫码检票")
+                      router.pushUrl({
+                        url:"pages/Pages_Scans",
+                        params:{"value":this.orderId["value2"]}
+                      })
                     })
                 }
+                .margin({bottom:40})
                 .alignItems(VerticalAlign.Center)
                 .justifyContent(FlexAlign.SpaceBetween)
                 .width("100%")
+                .height('100%')
               }
-              .margin({bottom:40})
               .width("100%")
-              .height(50)
+              .height(60)
 
 
             }
@@ -518,11 +543,13 @@ struct Pages_TaskList {
 
           }.tabBar(this.tabBuilder( 0, '任务列表'))
           TabContent() {
-
+            //地图展示View
+            PickUpMapView()//{OrderId:this.ordersId}
           }.tabBar(this.tabBuilder(1, '接客地图'))
 
           TabContent() {
-
+            //地图展示View
+            DropOffMapView()
           }.tabBar(this.tabBuilder(2, '送客地图'))
 
         }

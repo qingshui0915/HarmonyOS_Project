@@ -4,10 +4,13 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Response } from '../api/Response'; // Import Response class
 import { MMKV } from "@tencent/mmkv/src/main/ets/utils/MMKV";
 import { UserData } from '../viewmodel/UserData';
+import { router } from '@kit.ArkUI';
+
 // 刷新token请求方法调用
 async function refreshToken(): Promise<string | null> {
   // 获取之前refresh_token
   const refreshToken = MMKV.defaultMMKV().decodeString("R_Token");
+  console.log("打印refresh_token==="+JSON.stringify(refreshToken))
   //判空
   if (!refreshToken) {
     return null;
@@ -22,10 +25,22 @@ async function refreshToken(): Promise<string | null> {
   if (refreshResponse.responseCode === 200 && refreshResponse.result) {
     // 返回model
     let newToken = refreshResponse.result as UserData
-    console.log("打印新token==="+JSON.stringify(newToken))
-    //重新存入新Token-->下面会调用新的token
-    MMKV.defaultMMKV().encodeString("Token", `Bearer ${newToken.data.access_token}`)
-    return `Bearer ${newToken.data.access_token}`
+    if (newToken.statusCode == 200){
+      console.log("打印新token==="+JSON.stringify(newToken.data.access_token))
+      //重新存入新Token-->下面会调用新的token
+      MMKV.defaultMMKV().encodeString("Token", `Bearer ${newToken.data.access_token}`)
+      return `Bearer ${newToken.data.access_token}`
+    }else{
+      //这里跳转到重新登录页面
+      //清楚存储信息
+      MMKV.defaultMMKV().clearAll()
+      //跳转到登录页面
+      router.replaceUrl({
+        url:"pages/Pages_Login"
+      })
+      //清空页面栈 只保留当前页面在栈顶
+      router.clear()
+    }
   }
   return null;
 }
@@ -35,7 +50,7 @@ export async function requestSync<T>(path: string, method: http.RequestMethod, m
     let url = NetConstants.BASE_URL + path;
     let header: HeaderInterFace = {
       Authorization: MMKV.defaultMMKV().decodeString("Token") || "",
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
       timeout: NetConstants.TIMEOUT
     };
     if (marker == ""){
@@ -68,54 +83,64 @@ export async function requestSync<T>(path: string, method: http.RequestMethod, m
           res.data = data.result as T;
         }
         hilog.info(0, NetConstants.NET_TAG, `request success, path: ${path}, result: ${JSON.stringify(res)}`);
-      } else {
-        hilog.error(0, NetConstants.NET_TAG, `request error, path: ${path}, error: ${JSON.stringify(err)}`);
-        // token过期判断(HTTP-->401 || Unauthorized)
-        if (data?.responseCode === 401 || err?.message?.includes('Unauthorized')) {
-          // 获取刷新token
-          let newToken = await refreshToken();
+        resolve(res);  // 成功情况下直接返回
+        return;  // 添加return避免继续执行
+      }
+      // 处理错误情况
+      hilog.error(0, NetConstants.NET_TAG, `request error, path: ${path}, error: ${JSON.stringify(err)}`);
+      if (data?.responseCode === 401 || err?.message?.includes('Unauthorized')) {
+        try {
+          const newToken = await refreshToken();
           if (newToken) {
-            // 重新请求
             header.Authorization = newToken;
             hilog.info(0, NetConstants.NET_TAG, `Token refreshed, retrying request...`);
-            console.log("重新请求了")
-            // 重新请求当前接口
-            httpRequest.request(url, {
-              method: method,
-              expectDataType: http.HttpDataType.OBJECT,
-              header: header,
-              extraData: extraData
-            }, (errRetry, dataRetry) => {
-              if (!errRetry && dataRetry.responseCode === 200) {
-                if (typeof dataRetry.result === 'string') {
-                  res.data = JSON.parse(dataRetry.result);
+            
+            // 使用Promise包装重试请求
+            const retryResult = await new Promise<Response<T>>((retryResolve, retryReject) => {
+              httpRequest.request(url, {
+                method: method,
+                expectDataType: http.HttpDataType.OBJECT,
+                header: header,
+                extraData: extraData
+              }, (errRetry, dataRetry) => {
+                if (!errRetry && dataRetry.responseCode === 200) {
+                  if (typeof dataRetry.result === 'string') {
+                    res.data = JSON.parse(dataRetry.result);
+                  } else {
+                    res.data = dataRetry.result as T;
+                  }
+                  hilog.info(0, NetConstants.NET_TAG, `retry success, path: ${path}, result: ${JSON.stringify(res)}`);
+                  retryResolve(res);
                 } else {
-                  res.data = dataRetry.result as T;
+                  res.statusCode = dataRetry?.responseCode ?? -1;
+                  res.message = errRetry?.message ?? "Retry request failed";
+                  retryReject(res);
                 }
-                hilog.info(0, NetConstants.NET_TAG, `retry success, path: ${path}, result: ${JSON.stringify(res)}`);
-              } else {
-                //这里也是 获取刷新token失败-->这里直接全局弹框提醒重新登录
-                res.statusCode = dataRetry?.responseCode ?? -1;
-                res.message = errRetry?.message ?? "";
-                resolve(res);
-              }
+              });
             });
+            
+            resolve(retryResult);
           } else {
-            // 获取刷新token失败-->这里直接全局弹框提醒重新登录
             res.statusCode = data?.responseCode ?? -1;
             res.message = "Token refresh failed. Please log in again.";
             resolve(res);
           }
-        } else {
-          res.statusCode = data?.responseCode ?? -1;
-          res.message = err?.message ?? "";
+        } catch (error) {
+          res.statusCode = -1;
+          res.message = "Error during token refresh process";
           resolve(res);
         }
+      } else {
+        res.statusCode = data?.responseCode ?? -1;
+        res.message = err?.message ?? "";
+        resolve(res);
       }
-      resolve(res);
     });
   });
 }
+
+
+
 
 interface HeaderInterFace {
   Authorization: string;

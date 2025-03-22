@@ -6,6 +6,7 @@
  * @description: 通用常量
  */
 import { relationalStore } from '@kit.ArkData';
+import { Permissions } from '@kit.AbilityKit';
 
 export class CommonConstants {
   /**
@@ -79,4 +80,9 @@ export class CommonConstants {
     name: "framework.db",
     securityLevel: relationalStore.SecurityLevel.S1
   }
+
+  static readonly REQUEST_PERMISSIONS: Array<Permissions> = [
+    'ohos.permission.APPROXIMATELY_LOCATION',
+    'ohos.permission.LOCATION',
+  ];
 }

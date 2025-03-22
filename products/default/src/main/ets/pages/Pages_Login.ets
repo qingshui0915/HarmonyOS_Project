@@ -1,4 +1,4 @@
-import { Api ,showToast,PreferenceUtil,UserData,RoutineConstants, EventBus} from "base"
+import { Api ,showToast,PreferenceUtil,UserData,RoutineConstants, EventBus, LoadingUtils} from "base"
 import { router } from "@kit.ArkUI";
 import { VerificationCodeDialog } from "../view/VerificationCodeDialog"
 import { TestModel } from "base/src/main/ets/viewmodel/TestModel";
@@ -109,6 +109,10 @@ export struct Pages_Login {
       }
     }, 1000)
   }
+  aboutToAppear(): void {
+    LoadingUtils.init(this.getUIContext())
+  }
+
 
   //销毁清空
   aboutToDisappear(): void {
@@ -129,60 +133,89 @@ export struct Pages_Login {
       showToast("请勾选同意用户隐私政策")
       return
     }
-    this.showLoading = true;
+    LoadingUtils.showLoading('加载中...')
     let res = await Api.net().login(this.account, this.password);
-    this.showLoading = false;
     console.log(JSON.stringify(res))
     if (res.isSuccessWithData()) {
-      showToast("登录成功");
       this.userData =res.data as UserData
-      AppStorage.setOrCreate("Token", `Bearer ${this.userData.data.access_token}`)
-      MMKV.defaultMMKV().encodeString("Token",`Bearer ${this.userData.data.access_token}`)
-      MMKV.defaultMMKV().encodeString("R_Token",`${this.userData.data.refresh_token}`)
+      if (res.data?.statusCode == 200) {
+        LoadingUtils.hideLoading()
+        // showToast("登录成功");
+        AppStorage.setOrCreate("Token", `Bearer ${this.userData.data.access_token}`)
+        MMKV.defaultMMKV().encodeString("Token",`Bearer ${this.userData.data.access_token}`)
+        MMKV.defaultMMKV().encodeString("R_Token",`${this.userData.data.refresh_token}`)
+        //获取个人信息
+        this.getUserInfos()
+      }else{
+        LoadingUtils.hideLoading()
+        showToast(this.userData.message)
+      }
+
 
       // let res = await Api.net().getBanner("SpecialLineDriverBanner");
       // this.lists = (res.data as Data<TestModel>).data
       // console.log("===="+JSON.stringify(this.lists))
-      this.getUserInfos()
+
     } else {
+      LoadingUtils.hideLoading()
       showToast(res.message);
     }
   }
 
   //获取个人信息
   async getUserInfos(){
-    this.showLoading = true;
+    LoadingUtils.showLoading('加载中...')
     let res = await Api.net().getUserInfo();
-    this.showLoading = false;
     console.log("获取个人信息-==="+JSON.stringify(res))
     if (res.isSuccessWithData()) {//200
       this.userInfoData = (res.data as UserInfoModel)
-      MMKV.defaultMMKV().encodeString("USER_ID",this.userInfoData.data.Id)
-      MMKV.defaultMMKV().encodeString("NAME",this.userInfoData.data.Name)
-      MMKV.defaultMMKV().encodeBool("IS_BIND_CAR",this.userInfoData.data.IsBindCar)
-      MMKV.defaultMMKV().encodeInt32("CAR_STATUS",this.userInfoData.data.CarStatus)
-      MMKV.defaultMMKV().encodeString("PHONE",this.userInfoData.data.Phone)
-      MMKV.defaultMMKV().encodeString("CAR_ID",this.userInfoData.data.CarId)
-      // MMKV.defaultMMKV().encodeString("LoginClientId",this.userInfoData.data.LastLoginClientId)
-      //存储登录状态
-      MMKV.defaultMMKV().encodeString("IsLogins","IsLogin")
-      if (!this.userInfoData.data.IsBindCar) {
-        showToast("跳转绑定车辆信息页面")
-      }else{
-        if (this.userInfoData.data.CarStatus == 1) {
-          showToast("登录成功!")
-          router.replaceUrl({
-            url:"pages/Index"
-          })
-        }else if (this.userInfoData.data.CarStatus == 0){
-          showToast("跳转到审核中页面")
-        }else if (this.userInfoData.data.CarStatus == -1){//审核驳回
-          showToast("跳转到审核驳回页面")
-        }else{//999状态
-          showToast("跳转到审核驳回页面")
+      if (res.data?.statusCode == 200) {
+        LoadingUtils.hideLoading()
+        MMKV.defaultMMKV().encodeString("USER_ID",this.userInfoData.data.Id)
+        MMKV.defaultMMKV().encodeString("NAME",this.userInfoData.data.Name)
+        MMKV.defaultMMKV().encodeBool("IS_BIND_CAR",this.userInfoData.data.IsBindCar)
+        MMKV.defaultMMKV().encodeInt32("CAR_STATUS",this.userInfoData.data.CarStatus)
+        MMKV.defaultMMKV().encodeString("PHONE",this.userInfoData.data.Phone)
+        if (this.userInfoData.data?.CarId !=null) {
+          MMKV.defaultMMKV().encodeString("CAR_ID",this.userInfoData?.data?.CarId)
         }
+        // MMKV.defaultMMKV().encodeString("LoginClientId",this.userInfoData.data.LastLoginClientId)
+        //存储登录状态
+        MMKV.defaultMMKV().encodeString("IsLogins","IsLogin")
+        if (!this.userInfoData.data.IsBindCar) {
+          // showToast("跳转绑定车辆信息页面")
+          router.replaceUrl({
+            url:'pages/Pages_Select_Company'
+          })
+        }else{
+          if (this.userInfoData.data.CarStatus == 1) {
+            showToast("登录成功!")
+            router.replaceUrl({
+              url:"pages/Index"
+            })
+          }else if (this.userInfoData.data.CarStatus == 0){
+            showToast("跳转到审核中页面")
+            router.pushUrl({
+              url:'pages/Pages_SubmitForRevie'
+            })
+          }else if (this.userInfoData.data.CarStatus == -1){//审核驳回
+            showToast("跳转到审核驳回页面")
+            router.pushUrl({
+              url:'pages/Pages_Select_Company'
+            })
+          }else{//999状态
+            showToast("跳转到审核驳回页面")
+            router.pushUrl({
+              url:'pages/Pages_Select_Company'
+            })
+          }
+        }
+      }else {
+        LoadingUtils.hideLoading()
+        showToast(this.userInfoData.message)
       }
     }else{
+      LoadingUtils.hideLoading()
       showToast(res.message);
     }
   }
@@ -316,10 +349,29 @@ export struct Pages_Login {
         .justifyContent(FlexAlign.Center)
         .margin({top:10})
 
+
+
+        Column({space:10}){
+          Text("第三方账号登录")
+            .fontColor($r('app.color.text_color2'))
+            .fontSize(14)
+          Image($r('app.media.wechat'))
+            .width(40)
+            .height(40)
+            .onClick(()=>{
+              //
+              showToast("后续上架后接入")
+            })
+        }
+        .margin({top:100})
       }
       .width('100%')
-      .margin({ top: 360 })
+      .margin({ top: 280 })
       .padding({ left: 16, right: 16 })
+
+
+
+
       if(this.showAgreePrivacyPolicy){//通过变量控制隐私政策弹窗是否显示
         PrivacyPolicyDialog({
           cancel:this.onCancel.bind(this),//取消按钮点击
@@ -344,8 +396,6 @@ export struct Pages_Login {
  onPageShow(): void {
 
  }
-  aboutToAppear(): void {
 
-  }
 
 }

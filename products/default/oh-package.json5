@@ -11,5 +11,10 @@
     "home": "file:../../features/home",
     "@smarthane/titlebar": "^1.0.3",
     "@ohos/imageknife": "^3.2.0",
+    "@coner/scanner": "^1.1.6",
+    "@amap/amap_lbs_common": ">=1.1.0",
+    "@amap/amap_lbs_map3d": ">=2.1.1",
+    "@amap/amap_lbs_location": ">=1.1.0",
+    "@abner/dialog": "^1.1.6"
   }
 }

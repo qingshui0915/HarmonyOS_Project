@@ -5,7 +5,7 @@ import { MMKV } from "@tencent/mmkv/src/main/ets/utils/MMKV";
 import { abilityAccessCtrl, common } from '@kit.AbilityKit';
 import image from '@ohos.multimedia.image';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
-import { fileIo as fs } from '@kit.CoreFileKit'; // 引入 CoreFileKit 中的文件 I/O 模块
+import { fileIo, fileIo as fs, fileUri } from '@kit.CoreFileKit'; // 引入 CoreFileKit 中的文件 I/O 模块
 import { BusinessError } from '@kit.BasicServicesKit';
 
 @Entry
@@ -47,15 +47,40 @@ struct Pages_PlaceOrder {
     this.QRUrl = NetConstants.QR_BASE_URL+`/customLine/pages/index/index?type=3&id=${userId}"&name=${userName?.charAt(0)}师傅`
   }
 
-
+  //保存方法
+  async saveImg() {
+    try {
+      //截图生成像素图
+      const pixelMap = await componentSnapshot.get('share')
+      const imagePacker = image.createImagePacker()
+      //将像素图打包成二进制数据
+      const arrayBuffer = await imagePacker.packing(pixelMap, { format: 'image/jpeg', quality: 100 })
+      //缓存路径
+      const filePath = `${getContext().cacheDir}/${Date.now()}.jpeg`
+      const file = fileIo.openSync(filePath, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+      //将图片写入到沙箱相册
+      fileIo.writeSync(file.fd, arrayBuffer)
+      fileIo.closeSync(file.fd)
+      const uri = fileUri.getUriFromPath(filePath)
+      const phAccessHelper = photoAccessHelper.getPhotoAccessHelper(getContext(this))
+      //相册管理模块创建资源变更申请保存到相册
+      const assetChangeRequest =
+        photoAccessHelper.MediaAssetChangeRequest.createImageAssetRequest(getContext(this), uri)
+      //提交申请
+      await phAccessHelper.applyChanges(assetChangeRequest)
+      promptAction.showToast({ message: '保存成功' })
+    } catch (err) {
+      AlertDialog.show({ message: JSON.stringify(err), alignment: DialogAlignment.Center })
+    }
+  }
 
 
 
   build() {
-    Stack(){
-        Image($r("app.media.code_bg"))
-          .width("100%")
-          .height("100%")
+    Stack({alignContent:Alignment.TopStart}){
+        // Image($r("app.media.code_bg"))
+        //   .width("100%")
+
       Scroll(){
         Flex({ direction: FlexDirection.Column }){
           Column(){
@@ -64,52 +89,26 @@ struct Pages_PlaceOrder {
           Row(){
             RelativeContainer(){
               Stack() {
-                QRCode(this.QRUrl)
-                  .backgroundColor(Color.Transparent)
-                  .width(200)
-                  .height(200)
-                  .id(this.qrCodeId)
+                Column(){
+                  QRCode(this.QRUrl)
+                    .backgroundColor(Color.White)
+                    .width(200)
+                    .height(200)
+                }
+                .width('80%')
+                .height(400)
+                .justifyContent(FlexAlign.Center)
+                .backgroundColor(Color.White)  // 添加白色背景
+                .id('share')
+
                 Row({space:50}){
                   SaveButton()
-                    .onClick(async (event: ClickEvent, result: SaveButtonOnClickResult)=>{
+                    .backgroundColor($r("app.color.color_shubihong"))
+                    .onClick(async (event: ClickEvent, result: SaveButtonOnClickResult)=> {
                       if (result === SaveButtonOnClickResult.SUCCESS) { // 如果保存成功
-                        const context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext; // 获取上下文
-                        let helper = photoAccessHelper.getPhotoAccessHelper(context); // 获取照片访问助手
-                        try { // 尝试
-                          let uri = await helper.createAsset(photoAccessHelper.PhotoType.IMAGE, 'jpg'); // 创建图片资源
-                          let file = await fs.open(uri, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE); // 打开文件
-                          componentSnapshot.get(this.QRUrl).then((pixelMap) => { // 获取二维码快照
-                            let packOpts: image.PackingOption = { format: 'image/png', quality: 100 } // 打包选项
-                            const imagePacker: image.ImagePacker = image.createImagePacker(); // 创建图像打包器
-                            return imagePacker.packToFile(pixelMap, file.fd, packOpts).finally(() => { // 打包并保存文件
-                              imagePacker.release(); // 释放打包器
-                              fs.close(file.fd); // 关闭文件
-                              promptAction.showToast({ // 弹出提示消息
-                                message: '图片已保存至相册', // 提示内容
-                                duration: 2000 // 持续时间
-                              });
-                            });
-                          })
-                        } catch (error) { // 捕获错误
-                          const err: BusinessError = error as BusinessError; // 转换为业务错误
-                          console.error(`Failed to save photo. Code is ${err.code}, message is ${err.message}`); // 打印错误信息
-                        }
-
-                      } else { // 如果保存失败
-                        promptAction.showToast({
-                          // 弹出提示消息
-                          message: '设置权限失败！', // 提示内容
-                          duration: 2000 // 持续时间
-                        })
+                          this.saveImg()
                       }
                     })
-                  Button("保存相册")
-                    .type(ButtonType.Normal)
-                    .backgroundColor($r("app.color.color_shubihong"))
-                    .onClick(()=>{
-                      // this.generateQRCode()
-                    })
-
                   Button("打开微信")
                     .backgroundColor($r("app.color.button_qr_code_bg"))
                     .onClick(()=>{
@@ -118,16 +117,21 @@ struct Pages_PlaceOrder {
                 }
                 .margin({top:350})
               }
-              .height('66%')
               .width('100%')
 
             }
           }
-          .id("qr_code")
-
         }
       }
+      .scrollable(ScrollDirection.Vertical)
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.None)
+      .width('100%')
+      .height('100%')
     }
+    .width('100%')
+    .height('100%')
+
 
 
 

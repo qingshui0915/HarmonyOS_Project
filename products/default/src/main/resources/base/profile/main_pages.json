@@ -23,6 +23,12 @@
     "pages/Pages_CompletionTravelCard",
     "pages/Pages_CompletionVehicleLicense",
     "pages/Pages_CompulsoryTrafficInsurance",
-    "pages/Pages_TaskDetail"
+    "pages/Pages_TaskDetail",
+    "pages/Pages_AuditFailed",
+    "pages/Pages_SubmitForRevie",
+    "pages/Pages_Scans",
+    "pages/Page_Test",
+    "pages/Pages_Select_Company",
+    "pages/Pages_IdCard"
   ]
 }

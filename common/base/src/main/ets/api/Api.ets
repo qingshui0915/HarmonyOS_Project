@@ -20,6 +20,13 @@ import { PickUpPassengerModel } from "../viewmodel/PickUpPassengerModel";
 import { ServiceToPassengerModel } from "../viewmodel/ServiceToPassengerModel";
 import { ProgressDataModel } from "../viewmodel/ProgressDataModel";
 import { OrderListDetailModel } from "../viewmodel/OrderListDetailModel";
+import { AuthFailReasonModel } from "../viewmodel/AuthFailReasonModel";
+import { JSON } from "@kit.ArkTS";
+import { buildQueryString, QueryParams } from "../utils/QueryParamsUtils";
+import { BaseModel } from "../viewmodel/BaseModel";
+import { CompanyListModel } from "../viewmodel/CompanyListModel";
+import { SubmitCompanyModel } from "../viewmodel/SubmitCompanyModel";
+import { SelectCompanyModel } from "../viewmodel/SelectCompanyModel";
 
 export class Api {
   private static instance: Api;
@@ -99,8 +106,8 @@ export class Api {
   }
 
   //客运司机端-检票
-  async getCheckTicket(checkTicketModel:CheckTicketModel): Promise<Response<string>> {
-    return requestSync(`api/app/custom-line/Driver-order/check-ticket`, http.RequestMethod.POST,"",checkTicketModel);
+  async getCheckTicket(data: Record<string, string>): Promise<Response<BaseModel>> {
+    return requestSync(`api/app/custom-line/Driver-order/check-ticket`, http.RequestMethod.POST,"",buildQueryString(data));
   }
 
   //接到乘客
@@ -161,9 +168,14 @@ export class Api {
     return requestSync(`api/app/custom-line/Driver-center/driver-info-by-insurance-info`, http.RequestMethod.GET,"");
   }
 
+  //客运司机端-获取车管公司列表
+  async getCompanyList(): Promise<Response<CompanyListModel>> {
+    return requestSync(`api/app/custom-driver/User-center/car-company-list`, http.RequestMethod.GET,"");
+  }
+
   //绑定车辆-->车管公司  body入参 参数具体再定
-  async postBindingLineCar(): Promise<Response<string>> {
-    return requestSync(`api/app/custom-line/Driver-center/binding-line-car`, http.RequestMethod.POST,"");
+  async postBindingLineCar(submitCompanyModel:SubmitCompanyModel): Promise<Response<SelectCompanyModel>> {
+    return requestSync(`api/app/custom-line/Driver-center/binding-line-car`, http.RequestMethod.POST,"2222",submitCompanyModel);
   }
 
   //保存 司机身份证信息资料  body入参
@@ -192,7 +204,7 @@ export class Api {
   }
 
   //获取审核拒绝原因
-  async getAuthFailReason(): Promise<Response<string>> {
+  async getAuthFailReason(): Promise<Response<AuthFailReasonModel>> {
     return requestSync(`api/app/custom-line/Driver-center/auth-fail-reason`, http.RequestMethod.GET,"");
   }
 

@@ -1,6 +1,6 @@
 {
   "app": {
-    "bundleName": "com.sparks_fire.framework.framework.new",
+    "bundleName": "cn.hnxzkj.dz.driver",
     "vendor": "example",
     "versionCode": 1000000,
     "versionName": "1.0.0",

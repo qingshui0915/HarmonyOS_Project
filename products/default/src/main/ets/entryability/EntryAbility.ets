@@ -1,9 +1,10 @@
-import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { AbilityConstant, bundleManager, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { BreakpointConstants, CommonConstants, DBUtil, KvUtil, PreferenceUtil, showToast, WindowUtil } from 'base';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { MMKV } from '@tencent/mmkv/src/main/ets/utils/MMKV';
+import { JSON } from '@kit.ArkTS';
 
 export default class EntryAbility extends UIAbility {
   private windowObject?: window.Window;
@@ -29,6 +30,12 @@ export default class EntryAbility extends UIAbility {
     let mmkvRootDir = MMKV.initialize(appCtx);
     console.info('mmkv rootDir: ', mmkvRootDir);
     hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onCreate');
+
+
+    let flag = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_SIGNATURE_INFO;
+    let bundleInfo = bundleManager.getBundleInfoForSelfSync(flag)
+    let appId = bundleInfo.signatureInfo.appId;
+    console.log("=====>"+JSON.stringify(appId))
   }
 
   onDestroy(): void {

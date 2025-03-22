@@ -1,20 +1,5 @@
 {
   "app": {
-    "signingConfigs": [
-      {
-        "name": "default",
-        "type": "HarmonyOS",
-        "material": {
-          "certpath": "C:\\Users\\Administrator\\.ohos\\config\\default_NewFramework_0gt74CGsl1xDaiMQt7-JwoWyHHbV5l-XIYyOmMSN4MI=.cer",
-          "storePassword": "0000001B2E8F4B7C40B4F01D11C0234804D0A1E1AC7DF871AB001EFB47BBBD6F5C8B322ED0EAB7D73EEDFE",
-          "keyAlias": "debugKey",
-          "keyPassword": "0000001BAD711C9ADF28EC0DDADABBBE448CF7863DB9C1B85F205598D0C7781363030C516197999F3211DD",
-          "profile": "C:\\Users\\Administrator\\.ohos\\config\\default_NewFramework_0gt74CGsl1xDaiMQt7-JwoWyHHbV5l-XIYyOmMSN4MI=.p7b",
-          "signAlg": "SHA256withECDSA",
-          "storeFile": "C:\\Users\\Administrator\\.ohos\\config\\default_NewFramework_0gt74CGsl1xDaiMQt7-JwoWyHHbV5l-XIYyOmMSN4MI=.p12"
-        }
-      }
-    ],
     "products": [
       {
         "name": "default",
@@ -23,7 +8,8 @@
         "runtimeOS": "HarmonyOS",
         "buildOption": {
           "strictMode": {
-            "caseSensitiveCheck": true
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
           }
         }
       }
@@ -35,7 +21,37 @@
       {
         "name": "release"
       }
+    ],
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\Administrator\\.ohos\\config\\default_NewFramework_0gt74CGsl1xDaiMQt7-JwoWyHHbV5l-XIYyOmMSN4MI=.cer",
+          "storePassword": "0000001BD4990063BC7DF9C5DCDA3D3556C6E244DDF53A66AA26DFE0C03CF13FBCB9A3272403F1BA760336",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B9CBE3F06D17F80E4F1383B026447BE29EF19968261D62630C72662DF9912F10F8CC399454D3C34",
+          "profile": "C:\\Users\\Administrator\\.ohos\\config\\default_NewFramework_0gt74CGsl1xDaiMQt7-JwoWyHHbV5l-XIYyOmMSN4MI=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\Administrator\\.ohos\\config\\default_NewFramework_0gt74CGsl1xDaiMQt7-JwoWyHHbV5l-XIYyOmMSN4MI=.p12"
+        }
+      }
     ]
+    //    "signingConfigs": [
+    //      {
+    //        "name": "default",
+    //        "type": "HarmonyOS",
+    //        "material": {
+    //          "certpath": "C:\\Users\\Administrator\\.ohos\\config\\default_NewFramework_0gt74CGsl1xDaiMQt7-JwoWyHHbV5l-XIYyOmMSN4MI=.cer",
+    //          "storePassword": "0000001B54E7E27823E90E4F29982123B7CA834E1D82E74008E4CCB2D8B6336C90C8DB28B283B9379D2721",
+    //          "keyAlias": "debugKey",
+    //          "keyPassword": "0000001BA599840AC27A793F411C2C155AAB12DF68467BBAFE479BDA8F14848344343B08E85C3D0789624B",
+    //          "profile": "C:\\Users\\Administrator\\.ohos\\config\\navo_12_ultraDebug.p7b",
+    //          "signAlg": "SHA256withECDSA",
+    //          "storeFile": "C:\\Users\\Administrator\\.ohos\\config\\default_NewFramework_0gt74CGsl1xDaiMQt7-JwoWyHHbV5l-XIYyOmMSN4MI=.p12"
+    //        }
+    //      }
+    //    ]
   },
   "modules": [
     {

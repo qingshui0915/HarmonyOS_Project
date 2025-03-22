@@ -1,12 +1,14 @@
 import { TitleBar } from '@smarthane/titlebar'
 import { router } from '@kit.ArkUI'
 import { JSON } from '@kit.ArkTS'
-import { Api, CommonConstants, showToast } from 'base'
-import { CheckTicketModel } from 'base/src/main/ets/viewmodel/CheckTicketModel'
+import { Api, CommonConstants, EventBus, LoadingUtils, showToast } from 'base'
+// import { CheckTicketModel } from 'base/src/main/ets/viewmodel/CheckTicketModel'
 import { MMKV } from '@tencent/mmkv'
-import { common } from '@kit.AbilityKit'
-import { window } from '@kit.ArkUI'
-
+import { BaseModel } from 'base/src/main/ets/viewmodel/BaseModel';
+// 输码后: eventBus 发送和接收的数据模型
+interface InputCodeModule {
+  name: string
+}
 @Entry
 @Component
 struct Pages_InputCode {
@@ -20,10 +22,9 @@ struct Pages_InputCode {
   @State shiftId :string = ""
   @State inputCode :string = ""
   @State showLoading: boolean = false;
-  @State checkTicketParams :CheckTicketModel = new CheckTicketModel()
   @State topHeight : number = 0
   @State bottomHeight : number = 0
-
+  @State baseModel :BaseModel = new BaseModel()
 
 
 
@@ -35,6 +36,7 @@ struct Pages_InputCode {
   }
 
   aboutToAppear(): void {
+    LoadingUtils.init(this.getUIContext());
     this.topHeight =  AppStorage.get(CommonConstants.AVOID_RECT_HEIGHT_TOP) as number
     this.bottomHeight =  AppStorage.get(CommonConstants.AVOID_RECT_HEIGHT_BOTTOM) as number
 
@@ -48,25 +50,46 @@ struct Pages_InputCode {
 
   }
 
+  onPageHide(): void {
+    EventBus.cancel('InputCodeModule')
+    // this.context.eventHub.off("myEvent")
+  }
+
+
+
   async submitInputCode(){
     if (!this.inputCode) {
       showToast("请输入检票码")
       return
     }
-    this.showLoading = true;
     const carId = MMKV.defaultMMKV().decodeString("CAR_ID") as string
-    this.checkTicketParams.carId = carId
-    this.checkTicketParams.shiftId = this.shiftId["value"]
-    this.checkTicketParams.code = this.inputCode
-    let res = await Api.net().getCheckTicket(this.checkTicketParams);
-    this.showLoading = false;
+    const  params: Record<string, string> = {
+      'carId':carId,
+      'shiftId' :this.shiftId["value"],
+      'code' :this.inputCode.trim()
+    };
+    console.log("入参数据打印===>"+JSON.stringify(params))
+    LoadingUtils.showLoading("加载中...");
+    let res = await Api.net().getCheckTicket(params);
+    this.baseModel =  res.data  as BaseModel
     if (res.isSuccessWithData()) {
-      console.log("检票==>"+JSON.stringify(res.data))
-
+      if (this.baseModel.statusCode == 200) {
+        LoadingUtils.hideLoading()
+        console.log("检票==>"+JSON.stringify(res.data))
+        //检票成功发送事件
+        let eventData: InputCodeModule = {
+          name: '检票成功',
+        }
+        EventBus.send('InputCodeModule', eventData)
+        showToast("检票成功！")
+      }else{
+        LoadingUtils.hideLoading()
+        showToast(this.baseModel.message)
+      }
     }else{
+      LoadingUtils.hideLoading()
       showToast(res.message)
     }
-
   }
 
 

@@ -1,10 +1,19 @@
 import { MMKV } from "@tencent/mmkv";
-import { Api, PhoneNumberUtils, showToast } from "base";
+import { Api, EventBus, LoadingUtils, PhoneNumberUtils, showToast } from "base";
 import {  Data } from "base/src/main/ets/viewmodel/AllOrderListModel";
 import { EmptyView } from "./EmptyView";
+import call from "@ohos.telephony.call";
+import { BusinessError } from "@kit.BasicServicesKit";
+import { observer } from "@kit.TelephonyKit";
+import { PickUpPassengerModel } from "base/src/main/ets/viewmodel/PickUpPassengerModel";
+import { ServiceToPassengerModel } from "base/src/main/ets/viewmodel/ServiceToPassengerModel";
+
 /**
  * 已检票页面列表View
  */
+interface DeliverToPassengerModule {
+  name: string
+}
 @Component
 export struct AlreadyTaskListView {
   @Link orderId :string
@@ -17,7 +26,8 @@ export struct AlreadyTaskListView {
   @State refreshState: RefreshStatus = RefreshStatus.Inactive;
   @State canLoad: boolean = false;
   @State isLoading: boolean = false;
-
+  @State pickUp :PickUpPassengerModel = new PickUpPassengerModel()
+  @State serviceTo :ServiceToPassengerModel = new ServiceToPassengerModel()
 
   async getAlreadyTaskList(){
     const carId = MMKV.defaultMMKV().decodeString("CAR_ID") as string
@@ -33,11 +43,64 @@ export struct AlreadyTaskListView {
   }
 
   aboutToAppear(): void {
+    LoadingUtils.init(this.getUIContext())
     // console.log("组件传值接收===>" + JSON.stringify(this.orderId))
     //请求接口(这里数据已经筛选过)
     this.getAlreadyTaskList()
 
   }
+
+  async getPickUpPassengers(orderId:string){
+    LoadingUtils.showLoading("加载中...");
+    let res = await Api.net().pickUpPassenger(orderId);
+    if (res.isSuccessWithData()) {
+      this.pickUp  =  res.data as PickUpPassengerModel
+      if (this.pickUp.statusCode == 200) {
+        LoadingUtils.hideLoading();
+        //刷新列表
+        this.getAlreadyTaskList()
+      }else{
+        LoadingUtils.hideLoading();
+        showToast(this.pickUp.message)
+      }
+    }else{
+      LoadingUtils.hideLoading();
+      showToast(res.message)
+    }
+
+  }
+
+
+  async getDeliverToPassengers(orderId:string){
+    LoadingUtils.showLoading("加载中...");
+    let res = await Api.net().serviceToPassenger(orderId);
+    if (res.isSuccessWithData()) {
+      this.serviceTo = res.data as ServiceToPassengerModel
+      if (this.serviceTo.statusCode == 200) {
+        LoadingUtils.hideLoading();
+        //刷新列表
+        this.getAlreadyTaskList()
+        //测试发送事件
+        let eventData: DeliverToPassengerModule = {
+          name: '送达乘客',
+        }
+        EventBus.send('DeliverToPassenger', eventData)
+      } else {
+        LoadingUtils.hideLoading();
+        showToast(this.serviceTo.message)
+      }
+    }else{
+      LoadingUtils.hideLoading();
+      showToast(res.message)
+    }
+  }
+
+  onPageHide(): void {
+    EventBus.cancel('DeliverToPassenger')
+    // this.context.eventHub.off("myEvent")
+  }
+
+
 
   build() {
     Flex({ direction: FlexDirection.Column }) {
@@ -197,6 +260,31 @@ export struct AlreadyTaskListView {
                       .width(40)
                       .height(40)
                       .margin({right:15})
+                      .onClick(()=>{
+                        // showToast("这里调用拨号功能！")
+                        let isSupport = call.hasVoiceCapability();
+                        if (isSupport) {
+                          // 如果设备支持呼叫能力，则继续跳转到拨号界面，并显示拨号的号码
+                          call.makeCall( this.alreadyOrderList[index]?.Phone, (err: BusinessError) => {
+                            if (!err) {
+                              console.log("make call success.");
+                            } else {
+                              console.log("make call fail, err is:" + JSON.stringify(err));
+                            }
+                          });
+                          // 订阅通话业务状态变化（可选）
+                          class SlotId {slotId: number = 0}
+                          class CallStateCallback {
+                            state: call.CallState = call.CallState.CALL_STATE_UNKNOWN;
+                            number: string = "";
+                          }
+                          let slotId: SlotId = {slotId: 0}
+                          observer.on("callStateChange", slotId, (data: CallStateCallback) => {
+                            console.log("call state change, data is:" + JSON.stringify(data));
+                          });
+                        }
+
+                      })
                   }
                   .borderRadius(8)
                   .height(55)
@@ -207,11 +295,12 @@ export struct AlreadyTaskListView {
                   .justifyContent(FlexAlign.SpaceBetween)
 
                   Stack({alignContent:Alignment.End}){
-                    Button("接到乘客")
+                    Button(this.alreadyOrderList[index].BizState == 3 ? "送达乘客"  : "接到乘客")
                       .type(ButtonType.Normal)
-                      .backgroundColor($r("app.color.white"))
-                      .fontColor($r("app.color.text_color1"))
+                      .backgroundColor(this.alreadyOrderList[index].BizState == 3 ? $r("app.color.my_button_cz_color"):$r("app.color.white"))
+                      .fontColor(this.alreadyOrderList[index].BizState == 3 ? $r("app.color.white") : $r("app.color.text_color1"))
                       .fontSize(13)
+                      .visibility(this.alreadyOrderList[index].BizState == 4 ? Visibility.None : Visibility.Visible)
                       .border({
                         width:1,
                         color:Color.Black
@@ -220,7 +309,11 @@ export struct AlreadyTaskListView {
                       .width(100)
                       .onClick(()=>{
                         //TODO:请求处理 刷新列表
-                        showToast("点击接到乘客")
+                        if (this.alreadyOrderList[index].BizState != 3) {
+                          this.getPickUpPassengers(item.Id)
+                        }else if (this.alreadyOrderList[index].BizState == 3){
+                          this.getDeliverToPassengers(item.Id)
+                        }
                       })
 
                   }

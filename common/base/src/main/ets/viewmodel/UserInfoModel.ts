@@ -28,6 +28,6 @@ export class Data {
     IsBindWxToApp: boolean;
     NickName: string;
     AvatarUrl: string;
-    CarId: string;
+    CarId: string | null;
     PendingEntryAmount: number;
 }

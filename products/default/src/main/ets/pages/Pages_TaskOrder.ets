@@ -136,7 +136,7 @@ struct Pages_TaskOrder {
                       Text("总票")
                         .fontColor($r("app.color.text_h1"))
                         .fontSize(13)
-                      Text("1")
+                      Text(item?.BookCount.toString())
                         .fontColor($r("app.color.text_h1"))
                         .fontSize(13)
                     }
@@ -145,8 +145,8 @@ struct Pages_TaskOrder {
                       Text("未检")
                         .fontColor($r("app.color.text_h1"))
                         .fontSize(13)
-                      Text("1")
-                        .fontColor($r("app.color.text_h1"))
+                      Text((item?.BookCount - item?.UseCount).toString())
+                        .fontColor($r("app.color.not_checked_text_color"))
                         .fontSize(13)
                     }
                     .padding(10)
@@ -154,7 +154,7 @@ struct Pages_TaskOrder {
                       Text("已检")
                         .fontColor($r("app.color.text_h1"))
                         .fontSize(13)
-                      Text("1")
+                      Text(item?.UseCount.toString())
                         .fontColor($r("app.color.text_h1"))
                         .fontSize(13)
                     }
@@ -163,6 +163,7 @@ struct Pages_TaskOrder {
 
                   Button("去检票")
                     .borderRadius(3)
+                    .backgroundColor($r("app.color.color_shubihong"))
                     .type(ButtonType.Normal)
                     .onClick(()=>{
                       router.pushUrl({
@@ -246,24 +247,23 @@ struct Pages_TaskOrder {
     this.showLoading = false;
     if (res.isSuccessWithData()) { //200
       this.orderTaskList = res.data as OrderTaskModel
+      console.log("打印数据集合====>"+JSON.stringify(this.orderTaskList))
       if (!this.executed){
         this.executed = true
         //这里要过滤小红点
-        this.orderTaskList.data.map(item => item.GoTime.split(" ")[0])
-          .map(goTime => {
-            const date = new Date(goTime);
-            return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
-          })
-          .map(conversionDate => conversionDate.split("/"))
-          .forEach(split => {
-            const dateToCompare = `${split[1]}/${split[2]}`;
-            const foundItem = this.sevenDateList.find(item => item.date === dateToCompare);
-            if (foundItem) {
-              foundItem.count += 1;
-            }
-          });
+        const dateBookCounts:Map<string,number> = new Map();
+        this.orderTaskList.data.forEach(item => {
+          const date = new Date(item.GoTime.split(" ")[0]);
+          const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+          dateBookCounts.set(dateStr, (dateBookCounts.get(dateStr) || 0) + item.BookCount);
+        });
+        this.sevenDateList.forEach(item => {
+          const count = dateBookCounts.get(item.date) || 0;
+          item.count = count;
+        });
+
         this.sevenDateList = [...this.sevenDateList];
-        // console.log("匹配过滤顶部日期集合1===>"+JSON.stringify(this.sevenDateList))
+        console.log("匹配过滤顶部日期集合1===>"+JSON.stringify(this.sevenDateList))
       }
       //请求成功匹配过滤数据 拿当前日期和接口返回数据过滤
       this.orderTaskList.data  = this.orderTaskList.data.filter((item:Data)=>{
@@ -280,7 +280,7 @@ struct Pages_TaskOrder {
 
       Flex({direction:FlexDirection.Row,justifyContent:FlexAlign.SpaceBetween}){
         Row(){
-          List({space:8}){
+          List({space:4}){
             ForEach(this.sevenDateList,(item:SevenDateModel,index:number)=>{
               ListItem(){
                 RelativeContainer(){

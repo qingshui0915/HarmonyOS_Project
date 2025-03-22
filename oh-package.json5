@@ -5,7 +5,9 @@
     "base": "file:./common/base",
     "home": "file:./features/home",
     "@ohos/imageknife": "^3.2.0",
-    "@peakmain/library": "^2.0.10"
+    "@peakmain/library": "^2.0.10",
+    "class-transformer": "^0.5.1",
+    "reflect-metadata": "^0.1.13",
   },
   "devDependencies": {
     "@ohos/hypium": "1.0.19",

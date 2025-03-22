@@ -35,7 +35,39 @@
     },
     {
       "name": "READ_IMAGEVIDEO_info",
+      "value": "保存图片到相册"
+    },
+    {
+      "name": "READ_MEDIA_info",
+      "value": "访问媒体文件"
+    },
+    {
+      "name": "WRITE_MEDIA_info",
       "value": "获取相册功能需要该权限"
+    },
+    {
+      "name": "location_permission",
+      "value": "允许应用在定位场景中前台运行时获取位置信息"
+    },
+    {
+      "name": "fuzzy_location_permission",
+      "value": "允许应用在定位场景中获取设备模糊位置信息"
+    },
+    {
+      "name": "location_background",
+      "value": "允许应用在后台获取定位信息"
+    },
+    {
+      "name": "location_permission_reason",
+      "value": "允许应用在后台获取定位信息"
+    },
+    {
+      "name": "reasonRequestCamera",
+      "value": "扫一扫识别二维码"
+    },
+    {
+      "name": "check_internet_switch",
+      "value": "网络已断开，请检查网络设置"
     }
   ]
 }
