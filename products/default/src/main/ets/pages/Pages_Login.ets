@@ -190,18 +190,19 @@ export struct Pages_Login {
         }else{
           if (this.userInfoData.data.CarStatus == 1) {
             showToast("登录成功!")
+            MMKV.defaultMMKV().encodeString('TARGET',"Null")
             router.replaceUrl({
               url:"pages/Index"
             })
           }else if (this.userInfoData.data.CarStatus == 0){
-            showToast("跳转到审核中页面")
+            // showToast("跳转到审核中页面")
             router.pushUrl({
               url:'pages/Pages_SubmitForRevie'
             })
           }else if (this.userInfoData.data.CarStatus == -1){//审核驳回
-            showToast("跳转到审核驳回页面")
+            // showToast("跳转到审核驳回页面")
             router.pushUrl({
-              url:'pages/Pages_Select_Company'
+              url:'pages/Pages_AuditFailed'
             })
           }else{//999状态
             showToast("跳转到审核驳回页面")
@@ -283,6 +284,7 @@ export struct Pages_Login {
             placeholder: "请输入验证码"
           })
             .fontSize(15)
+            .maxLength(4)
             .type(InputType.Number)
             .fontColor($r("app.color.text_h1"))
             .onChange((value) => {
@@ -340,7 +342,7 @@ export struct Pages_Login {
             .fontSize(14)
             .fontColor($r("app.color.color_shubihong"))
             .onClick(()=>{
-              this.openWebUrl("otherPages/pages/rich-text/rich-text?id=3718b9b6-6b7a-4d9f-9556-fc63a3ecdf86")
+              this.openWebUrl("otherPages/pages/rich-text/rich-text?code=CustomDriverAppPrivacyAgreeme")
               // showToast("点击跳转查看隐私协议")
             })
         }
@@ -363,6 +365,7 @@ export struct Pages_Login {
               showToast("后续上架后接入")
             })
         }
+        .visibility(Visibility.None)
         .margin({top:100})
       }
       .width('100%')

@@ -15,6 +15,13 @@
     "@amap/amap_lbs_common": ">=1.1.0",
     "@amap/amap_lbs_map3d": ">=2.1.1",
     "@amap/amap_lbs_location": ">=1.1.0",
-    "@abner/dialog": "^1.1.6"
+    "@abner/dialog": "^1.1.6",
+//    "@aliyun/oss": "^1.0.0-beta.1"
+    //依赖gtsdk.har
+    "@getui/push": "file:./libs/GT-HM-1.0.8.har",
+    //微信SDK
+    "@tencent/wechat_open_sdk": "1.0.0",
+    //
+    "@pura/harmony-dialog": "^1.1.4"
   }
 }

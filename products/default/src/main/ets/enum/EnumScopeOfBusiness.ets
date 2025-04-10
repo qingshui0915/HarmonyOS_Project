@@ -35,7 +35,7 @@ export class EnumScopeOfBusiness {
   }
 
   // 根据 code 获取 name
-  static getNameByCode(code: string): string | null {
+  static getNameByCode(code: string): string  {
     const values = [
       EnumScopeOfBusiness.省际班车客运,
       EnumScopeOfBusiness.市际班车客运,
@@ -50,7 +50,7 @@ export class EnumScopeOfBusiness {
         return value.name;
       }
     }
-    return null; // 如果没有找到，返回 null 或者其他错误信息
+    return ""; // 如果没有找到，返回 null 或者其他错误信息
   }
 
   // 获取所有枚举值

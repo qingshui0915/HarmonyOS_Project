@@ -3,6 +3,9 @@ import { router } from '@kit.ArkUI';
 import { Api, LoadingUtils } from 'base';
 import { UserInfoModel } from 'base/src/main/ets/viewmodel/UserInfoModel';
 import { AuthFailReasonModel, Data } from 'base/src/main/ets/viewmodel/AuthFailReasonModel';
+import { FailReasonModel } from '../viewmodel/FailReasonModel';
+import { showToast } from '@abner/dialog';
+import { MMKV } from '@tencent/mmkv';
 
 @Entry
 @Component
@@ -12,6 +15,7 @@ struct Pages_AuditFailed {
   @State userInfoData:UserInfoModel = new UserInfoModel()
   @State authFailReason:AuthFailReasonModel = new AuthFailReasonModel()
   @State authFailReasonList:Data[] = []
+  @State result:FailReasonModel[] = []
   //titleBar组件
   @State model1: TitleBar.Model = new TitleBar.Model()
     .setOnLeftClickListener(() => {
@@ -33,28 +37,67 @@ struct Pages_AuditFailed {
     if (res.isSuccessWithData()) { //200
       LoadingUtils.hideLoading();
       if (this.userInfoData?.data?.CarStatus == 1 ) {
+        MMKV.defaultMMKV().encodeInt32("CAR_STATUS",this.userInfoData.data.CarStatus)
         ////审核通过   进首页
         router.replaceUrl({
           url:"pages/Index"
         })
       }else if (this.userInfoData?.data?.CarStatus == 0){
+        MMKV.defaultMMKV().encodeInt32("CAR_STATUS",this.userInfoData.data.CarStatus)
         //审核中
         router.replaceUrl({
-          url:"pages/Index"
+          url:"pages/Pages_SubmitForRevie"
         })
       }else if (this.userInfoData?.data?.CarStatus == -1){
-        //审核驳回
+        MMKV.defaultMMKV().encodeInt32("CAR_STATUS",this.userInfoData.data.CarStatus)
+        //审核驳回 原因展示
         this.getAuthFailReason()
       }
     }else{
       LoadingUtils.hideLoading();
+      showToast(res.message)
     }
   }
 
   async getAuthFailReason(){
+    LoadingUtils.showLoading("加载中...");
     let res = await Api.net().getAuthFailReason();
-    this.authFailReason = (res.data as AuthFailReasonModel)
-    this.authFailReasonList = this.authFailReason.data as Data[]
+    if (res.isSuccessWithData()) {
+      this.authFailReason = (res.data as AuthFailReasonModel)
+      if (this.authFailReason.statusCode == 200) {
+        LoadingUtils.hideLoading()
+        this.authFailReasonList = this.authFailReason.data as Data[]
+        this.result = []
+        for (let i = 0; i <this.authFailReasonList.length; i++) {
+          const resultBean :FailReasonModel = new FailReasonModel()
+          resultBean.Id = this.authFailReasonList[i]?.AuthType as number
+          if (this.authFailReasonList[i]?.AuthType == 1){
+            resultBean.Type = "身份证信息"
+          }else if (this.authFailReasonList[i]?.AuthType == 2){
+            resultBean.Type = "驾驶证信息"
+          }else if (this.authFailReasonList[i]?.AuthType == 3){
+            resultBean.Type = "行驶证信息"
+          }else if (this.authFailReasonList[i]?.AuthType == 4){
+            resultBean.Type = "网约车资料信息"
+          }else if (this.authFailReasonList[i]?.AuthType == 5){
+            resultBean.Type = "保险信息"
+          }
+          resultBean.Content = this.authFailReasonList[i]?.FailReason?.toString() as string
+          resultBean.Reason = this.authFailReasonList[i]?.FailReason?.toString() as string
+          this.result.push(resultBean)
+        }
+        console.log("====>"+JSON.stringify(this.result))
+        this
+      }else{
+        LoadingUtils.hideLoading()
+        showToast(this.authFailReason.message)
+      }
+    }else{
+      LoadingUtils.hideLoading()
+      showToast(res.message)
+    }
+
+
   }
 
 
@@ -74,20 +117,29 @@ struct Pages_AuditFailed {
 
       Column(){
         List({space:10}){
-          ForEach(this.authFailReasonList,(item: Data , index:number)=>{
+          ForEach(this.result,(item: FailReasonModel , index:number)=>{
             ListItem(){
               Row({space:10}){
                 Column({space:5}){
-                  Text("222")
+                  Text(item.Type)
                     .fontColor($r("app.color.text_color1"))
                     .fontSize(14)
-                  Text("3333")
+                  Text(item.Reason)
                     .fontColor($r("app.color.text_h1"))
                     .fontSize(12)
                 }
                 .margin({left:16})
                 .alignItems(HorizontalAlign.Start)
                 .justifyContent(FlexAlign.Center)
+
+
+                Button("重新提交")
+                  .type(ButtonType.Normal)
+                  .width(90)
+                  .borderRadius(8)
+                  .fontSize(13)
+                  .backgroundColor($r('app.color.color_shubihong'))
+
               }
               .width('90%')
               .padding(8)
@@ -98,28 +150,28 @@ struct Pages_AuditFailed {
               .justifyContent(FlexAlign.SpaceBetween)
             }
             .onClick(()=>{
-              // if (this.result[index]?.Id == "1") {
-              //   router.pushUrl({
-              //     url:"pages/Pages_CompletionIdCard"
-              //   })
-              // }else if (this.result[index]?.Id == "2"){
-              //   router.pushUrl({
-              //     url:"pages/Pages_CompletionDriverCard"
-              //   })
-              // }else if (this.result[index]?.Id == "3"){
-              //   router.pushUrl({
-              //     url:"pages/Pages_CompletionTravelCard"
-              //   })
-              // }
-              // else if (this.result[index]?.Id == "4"){
-              //   router.pushUrl({
-              //     url:"pages/Pages_CompletionVehicleLicense"
-              //   })
-              // }else if (this.result[index]?.Id == "5"){
-              //   router.pushUrl({
-              //     url:"pages/Pages_CompulsoryTrafficInsurance"
-              //   })
-              // }
+              if (item?.Id == 1) {
+                router.pushUrl({
+                  url:"pages/Pages_CompletionIdCard"
+                })
+              }else if (item?.Id == 2){
+                router.pushUrl({
+                  url:"pages/Pages_CompletionDriverCard"
+                })
+              }else if (item?.Id == 3){
+                router.pushUrl({
+                  url:"pages/Pages_CompletionTravelCard"
+                })
+              }
+              else if (item?.Id == 4){
+                router.pushUrl({
+                  url:"pages/Pages_CompletionVehicleLicense"
+                })
+              }else if (item?.Id == 5){
+                router.pushUrl({
+                  url:"pages/Pages_CompulsoryTrafficInsurance"
+                })
+              }
             })
           },(item:Data)=>item?.FailReason)
         }
@@ -130,6 +182,7 @@ struct Pages_AuditFailed {
 
     }
     .width('100%')
+    .height('100%')
     .backgroundColor($r("app.color.system_background_color"))
 
 

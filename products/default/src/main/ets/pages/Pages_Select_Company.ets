@@ -55,6 +55,9 @@ struct Pages_Select_Company {
 
   }
 
+  /**
+   * 获取车管公司列表
+   */
   async getCompanyList(){
     LoadingUtils.showLoading('加载中...')
     let res = await Api.net().getCompanyList();
@@ -90,7 +93,8 @@ struct Pages_Select_Company {
       if (this.selectCompany.statusCode == 200) {
         LoadingUtils.hideLoading()
         router.pushUrl({
-          url:'pages/Pages_CompletionIdCard'
+          url:'pages/Pages_CompletionIdCard',
+          params:{"value":"Target"}
         })
       }else{
         LoadingUtils.hideLoading()

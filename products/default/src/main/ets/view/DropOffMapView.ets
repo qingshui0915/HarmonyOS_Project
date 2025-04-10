@@ -10,7 +10,7 @@ import { AMap,
   Marker,
   MarkerOptions} from "@amap/amap_lbs_map3d";
 import { MMKV } from "@tencent/mmkv";
-import { Api, LoadingUtils, showToast } from "base";
+import { Api, CommonConstants, LoadingUtils, showToast } from "base";
 import { AllOrderListModel, Data } from "base/src/main/ets/viewmodel/AllOrderListModel";
 import { MakerInfoModel } from "../viewmodel/MakerInfoModel";
 import { router } from "@kit.ArkUI";
@@ -65,8 +65,44 @@ export struct DropOffMapView {
         marker.endAddress = orderBean.EndPlace
         this.markerList.push(marker)
       }
-
       console.log("打印封装marker信息集合===>"+JSON.stringify(this.markerList))
+      if (this.markerList.length > 0) {
+        let markerOptionsList: ArrayList<MarkerOptions> = new ArrayList<MarkerOptions>()
+        for (let i = 0; i < this.markerList.length; i++) {
+          let options1: MarkerOptions = new MarkerOptions()
+            .setPosition(new LatLng(parseFloat(this.markerList[i]?.endLatLng.split(",")[0]),
+              parseFloat(this.markerList[i]?.endLatLng.split(",")[1])))
+          // let bitmapDes = await BitmapDescriptorFactory.fromRawfilePath(globalContext, "custom_maker.png");
+          let bitmapDes = await BitmapDescriptorFactory.fromView(() => {
+            this.customMarkerBuilder(this.markerList.length);
+          });
+          if (bitmapDes) {
+            options1.setIcon(bitmapDes);
+          }
+          options1.setTitle(this.markerList[i].name)
+          options1.setSnippet(this.markerList[i].num)
+          options1.setClickable(true)
+          markerOptionsList.add(options1);
+        }
+        let marker1 = this.aMap?.addMarkers(markerOptionsList, false);
+        //所有marker显示在当前页面的可视范围内
+        this.zoomToSpan()
+        // 初始化分组数据
+        let tempMap = new Map<string, Array<MakerInfoModel>>()
+        this.markerList.forEach(marker => {
+          // 使用相同的格式构建 key
+          const lat = parseFloat(marker.endLatLng.split(",")[0])
+          const lng = parseFloat(marker.endLatLng.split(",")[1])
+          const key = `${lat},${lng}`
+          if (!tempMap.has(key)) {
+            tempMap.set(key, [])
+          }
+          tempMap.get(key)?.push(marker)
+        })
+        this.groupedMarkers = tempMap
+        console.log("集合数据处理====>"+JSON.stringify(this.groupedMarkers))
+
+      }
     }else{
       LoadingUtils.hideLoading();
       showToast(res.message)
@@ -172,7 +208,7 @@ export struct DropOffMapView {
 
 
     globalContext = getContext().getApplicationContext();
-    MapsInitializer.setApiKey("2d92af4a266beadb78a91b4e6a828363");
+    MapsInitializer.setApiKey(CommonConstants.GAODE_KEY);
     MapsInitializer.setDebugMode(true);
     MapViewManager.getInstance().registerMapViewCreatedCallback(this.mapViewCreateCallback);
   }

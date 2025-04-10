@@ -33,12 +33,9 @@ struct Pages_PlaceOrder {
 
 
   @Builder TitleBars(){
-    Stack({ alignContent: Alignment.TopStart }){
-      Flex({ direction: FlexDirection.Column }) {
-        TitleBar({ model: $model1 })
-      }
+    Column(){
+      TitleBar({ model: $model1 })
     }
-    .width('100%')
   }
 
   aboutToAppear(): void {
@@ -80,57 +77,57 @@ struct Pages_PlaceOrder {
     Stack({alignContent:Alignment.TopStart}){
         // Image($r("app.media.code_bg"))
         //   .width("100%")
-
-      Scroll(){
-        Flex({ direction: FlexDirection.Column }){
-          Column(){
-            this.TitleBars()
-          }
-          Row(){
-            RelativeContainer(){
-              Stack() {
-                Column(){
-                  QRCode(this.QRUrl)
-                    .backgroundColor(Color.White)
-                    .width(200)
-                    .height(200)
-                }
-                .width('80%')
-                .height(400)
-                .justifyContent(FlexAlign.Center)
-                .backgroundColor(Color.White)  // 添加白色背景
-                .id('share')
-
-                Row({space:50}){
-                  SaveButton()
-                    .backgroundColor($r("app.color.color_shubihong"))
-                    .onClick(async (event: ClickEvent, result: SaveButtonOnClickResult)=> {
-                      if (result === SaveButtonOnClickResult.SUCCESS) { // 如果保存成功
-                          this.saveImg()
-                      }
-                    })
-                  Button("打开微信")
-                    .backgroundColor($r("app.color.button_qr_code_bg"))
-                    .onClick(()=>{
-                      showToast("跳转打开微信")
-                    })
-                }
-                .margin({top:350})
+      Flex({ direction: FlexDirection.Column }){
+        Column(){
+          this.TitleBars()
+        }
+        Row(){
+          RelativeContainer(){
+            Stack() {
+              Column(){
+                QRCode(this.QRUrl)
+                  .backgroundColor(Color.White)
+                  .width(200)
+                  .height(200)
               }
-              .width('100%')
+              .width('80%')
+              .height(400)
+              .justifyContent(FlexAlign.Center)
+              .backgroundColor(Color.White)  // 添加白色背景
+              .id('share')
 
+              Row({space:50}){
+                SaveButton()
+                  .width(96)
+                  .height(40)
+                  .backgroundColor($r("app.color.color_shubihong"))
+                  .onClick(async (event: ClickEvent, result: SaveButtonOnClickResult)=> {
+                    if (result === SaveButtonOnClickResult.SUCCESS) { // 如果保存成功
+                      this.saveImg()
+                    }
+                  })
+                Button("打开微信")
+                  .backgroundColor($r("app.color.button_qr_code_bg"))
+                  .onClick(()=>{
+                    showToast("功能暂未开放")
+                  })
+              }
+              .margin({top:350})
             }
+            .width('100%')
+
           }
         }
       }
-      .scrollable(ScrollDirection.Vertical)
-      .scrollBar(BarState.Off)
-      .edgeEffect(EdgeEffect.None)
-      .width('100%')
-      .height('100%')
+      // Scroll(){
+      //
+      // }
+      // .scrollable(ScrollDirection.Vertical)
+      // .scrollBar(BarState.Off)
+      // .edgeEffect(EdgeEffect.None)
     }
-    .width('100%')
     .height('100%')
+    .width('100%')
 
 
 

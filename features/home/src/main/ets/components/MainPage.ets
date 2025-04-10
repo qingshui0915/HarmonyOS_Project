@@ -7,7 +7,7 @@ import { MMKV } from '@tencent/mmkv';
 import { HomeDataModel, Data,LineList } from 'base/src/main/ets/viewmodel/HomeDataModel';
 import { common } from '@kit.AbilityKit';
 
-interface NoticeChildModule {
+interface SendFlushedModule {
   name: string
 }
 @Component
@@ -248,20 +248,14 @@ export struct MainPage {
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
   }
 
-  onPageShow(): void {
-
-  }
-
-
-  onPageHide(): void {
-
-  }
 
 
   aboutToAppear(): void {
     LoadingUtils.init(this.getUIContext());
     console.log("过期token===>"+JSON.stringify(MMKV.defaultMMKV().decodeString("Token")))
     this.getIndexData()
+
+
   }
 
 
@@ -295,7 +289,7 @@ export struct MainPage {
     let res = await Api.net().getHomeDatas(carId);
     if (res.isSuccessWithData()) { //200
       if (res.data?.statusCode==200) {
-        console.log("打印首页数据请求2====>"+JSON.stringify(this.homeData))
+        console.log("打印首页数据请求2====>"+JSON.stringify(res.data?.data))
         LoadingUtils.hideLoading();
         this.homeData = res.data as HomeDataModel
         this.homeTop = this.homeData.data

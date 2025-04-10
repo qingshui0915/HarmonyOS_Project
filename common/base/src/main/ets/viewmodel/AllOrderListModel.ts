@@ -1,4 +1,8 @@
 export class AllOrderListModel {
+    statusCode: number = 200;
+    message: string = "";
+    code: number =0;
+    details: string ="";
     data: Data[];
 }
 

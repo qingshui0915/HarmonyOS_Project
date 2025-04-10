@@ -43,9 +43,7 @@ struct Pages_Mine {
 
   async getUserInfo(){
     LoadingUtils.showLoading("加载中...");
-    this.showLoading = true;
     let res = await Api.net().getUserInfo();
-    this.showLoading = false;
     // console.log("登录用户数据====>"+JSON.stringify(res.data))
     this.userInfoData = (res.data as UserInfoModel)
     if (res.isSuccessWithData()) { //200
@@ -147,7 +145,7 @@ struct Pages_Mine {
           url:"pages/Pages_Recharge"
         })
       }else{
-        showToast("绑定微信去")
+        showToast("请先绑定微信")
       }
     }
   }
@@ -424,7 +422,7 @@ struct Pages_Mine {
                     Image($r("app.media.message"))
                       .width(20)
                       .height(20)
-                    Text("新消息通知")
+                    Text("关于我们")
                       .fontColor($r("app.color.text_color1"))
                       .fontSize(16)
                   }
@@ -434,12 +432,15 @@ struct Pages_Mine {
                     .width(18)
                     .height(18)
                 }
+                .visibility(Visibility.Visible)
                 .width("90%")
-                .margin({left:20,right:20})
+                .margin({left:20,right:20,bottom:20})
                 .alignItems(VerticalAlign.Center)
                 .justifyContent(FlexAlign.SpaceBetween)
                 .onClick(()=>{
-                  showToast("点击新消息通知")
+                  router.pushUrl({
+                    url:'pages/Pages_AboutUs'
+                  })
                 })
               }
 
@@ -458,12 +459,12 @@ struct Pages_Mine {
               Text("Copyright ©2023")
                 .fontColor($r("app.color.text_h1"))
                 .fontSize(14)
-              Text("哈哈出行版权所有v2.7.2")
+              Text("哈哈出行版权所有")
                 .fontColor($r("app.color.text_h1"))
                 .fontSize(14)
-              Text("备案号:豫ICP备18030969号-6A")
-                .fontColor($r("app.color.text_h1"))
-                .fontSize(14)
+              // Text("备案号:豫ICP备18030969号-6A")
+              //   .fontColor($r("app.color.text_h1"))
+              //   .fontSize(14)
             }
             .width("100%")
             .alignItems(HorizontalAlign.Center)

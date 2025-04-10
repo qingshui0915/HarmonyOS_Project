@@ -85,4 +85,6 @@ export class CommonConstants {
     'ohos.permission.APPROXIMATELY_LOCATION',
     'ohos.permission.LOCATION',
   ];
+
+  static readonly GAODE_KEY:string = '4f1c58fb45ec67a1ad33f16f10e85233'//2c78363866e7d29b3ef13b95a0fe05cb
 }

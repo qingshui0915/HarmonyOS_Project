@@ -1,10 +1,12 @@
 import { TitleBar } from '@smarthane/titlebar';
 import { router } from '@kit.ArkUI';
-import { Api, LoadingUtils } from 'base';
+import { Api, EventBus, LoadingUtils } from 'base';
 import { ProgressDataModel ,Data} from 'base/src/main/ets/viewmodel/ProgressDataModel';
 import { ProgressListModel } from '../viewmodel/ProgressListModel';
 import { JSON } from '@kit.ArkTS';
-
+interface SendFlushedModule {
+  name: string
+}
 /**
  * 证件审核
  */
@@ -38,11 +40,11 @@ struct Pages_DocumentReview {
     let res = await Api.net().getDriverInfoProgress();
     if (res.isSuccessWithData()) {
       if (res.data?.statusCode == 200) {
+        this.progressInfoData = new Data()
         LoadingUtils.hideLoading()
         this.progressData = res.data as ProgressDataModel
         this.progressInfoData = this.progressData.data
-        // console.log("数据打印===>" + JSON.stringify(this.progressData))
-        // console.log("数据打印===>" + JSON.stringify(this.progressInfoData))
+        this.result = []
         // 将每个字段转换为所需的格式并添加到结果数组中
         this.result.push({
           "Id" :"1",
@@ -89,6 +91,23 @@ struct Pages_DocumentReview {
 
   }
 
+
+  onPageShow(): void {
+    console.log("onPageShow===>")
+    EventBus.listen<SendFlushedModule>('SendFlushedModule', (data) => {
+      if (data !== undefined) {
+        if (data.name == "补齐证件") {
+          console.log("触发了吗===>"+JSON.stringify(data))
+          //刷新列表
+          this.getDriverInfoProgressData()
+        }
+      }
+    })
+  }
+
+  onBackPress(): boolean | void {
+    console.log("222222")
+  }
 
   aboutToAppear(): void {
     LoadingUtils.init(this.getUIContext());

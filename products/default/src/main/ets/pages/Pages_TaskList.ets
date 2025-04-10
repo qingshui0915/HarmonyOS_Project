@@ -58,14 +58,20 @@ struct Pages_TaskList {
 
   async getTaskList(){
     const carId = MMKV.defaultMMKV().decodeString("CAR_ID") as string
-    this.showLoading = true;
+    LoadingUtils.showLoading("加载中...");
     let res = await Api.net().getOrderData(carId,this.orderId["value1"],this.orderId["value2"]);
-    this.showLoading = false;
     if (res.isSuccessWithData()) {
       this.allOrderList =  res.data as AllOrderListModel
-      this.disposeOrderList = this.allOrderList.data
-      console.log("打印列表数据集合===>"+JSON.stringify(this.disposeOrderList))
+      if (this.allOrderList.statusCode == 200) {
+        LoadingUtils.hideLoading();
+        this.disposeOrderList = this.allOrderList?.data
+        console.log("打印列表数据集合===>"+JSON.stringify(this.disposeOrderList))
+      }else{
+        LoadingUtils.hideLoading();
+        showToast(this.allOrderList.message)
+      }
     }else{
+      LoadingUtils.hideLoading();
       showToast(res.message)
     }
   }
@@ -117,6 +123,7 @@ struct Pages_TaskList {
 
 
   onPageShow() :void {
+    console.log("Pages_TaskList===>"+'onPageShow')
     EventBus.listen<InputCodeModule>('InputCodeModule', (data) => {
       if (data !== undefined) {
         if (data.name == "检票成功") {
@@ -137,7 +144,7 @@ struct Pages_TaskList {
 
 
   aboutToAppear(): void {
-
+    console.log("Pages_TaskList===>"+'aboutToAppear')
     this.orderId =  router.getParams() as string
     console.log("页面传参==>"+JSON.stringify(this.orderId))
     this.getTaskList()
@@ -424,7 +431,7 @@ struct Pages_TaskList {
                       .visibility(this.disposeOrderList[index].BizState == 4 ? Visibility.None : Visibility.Visible)
                       .border({
                         width:1,
-                        color:$r("app.color.text_h1")
+                        color:this.disposeOrderList[index].BizState == 3 ? $r("app.color.transparente_color") :$r("app.color.text_h1")
                       })
                       .borderRadius(5)
                       .margin({top:10})
@@ -560,7 +567,7 @@ struct Pages_TaskList {
         .barHeight(50)
         .animationDuration(0)
         .onChange((index: number) => {
-          console.log("22222==>"+JSON.stringify(index))
+          // console.log("22222==>"+JSON.stringify(index))
           // currentIndex控制TabContent显示页签
           this.currentIndex = index
           this.selectedIndex = index

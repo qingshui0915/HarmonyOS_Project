@@ -1,9 +1,10 @@
 import { TitleBar } from '@smarthane/titlebar';
 import { router } from '@kit.ArkUI';
-import { Api, LoadingUtils, showToast } from 'base';
+import { Api, EventBus, LoadingUtils, showToast } from 'base';
 import { ProgressDataModel ,Data} from 'base/src/main/ets/viewmodel/ProgressDataModel';
 import { ProgressListModel } from '../viewmodel/ProgressListModel';
 import { JSON } from '@kit.ArkTS';
+
 
 @Entry
 @Component
@@ -35,9 +36,11 @@ struct Pages_PersonalData {
     let res = await Api.net().getDriverInfoProgress();
     if (res.isSuccessWithData()) {
       if (res.data?.statusCode == 200) {
+        this.progressInfoData = new Data()
         LoadingUtils.hideLoading()
         this.progressData = res.data as ProgressDataModel
         this.progressInfoData = this.progressData.data
+        this.result = []
         // 将每个字段转换为所需的格式并添加到结果数组中
         this.result.push({
           "Id" :"1",
@@ -81,11 +84,21 @@ struct Pages_PersonalData {
 
   }
 
+  onPageShow(): void {
+
+  }
+
+
+  onPageHide(): void {
+  }
+
 
   aboutToAppear(): void {
     LoadingUtils.init(this.getUIContext());
     this.getDriverInfoProgressData()
   }
+
+
 
 
   build() {

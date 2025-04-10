@@ -47,6 +47,7 @@
     {"name": "title_required_text_color","value": "#FF453A"},
     {"name": "layout_dividing_lines_bg_color","value": "#E5E5E5"},
     {"name": "warn_text_color","value": "#E67E22"},
-    {"name": "not_checked_text_color","value": "#F52D56"}
+    {"name": "not_checked_text_color","value": "#F52D56"},
+    {"name": "transparente_color","value": "#00FFFFFF"}
   ]
 }

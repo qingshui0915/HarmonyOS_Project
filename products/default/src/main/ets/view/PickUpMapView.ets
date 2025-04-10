@@ -14,15 +14,11 @@ import { AMap,
   MapsInitializer, MapView, MapViewComponent, MapViewManager,
   Marker,
   MarkerOptions } from '@amap/amap_lbs_map3d';
-import { abilityAccessCtrl, common, PermissionRequestResult, Permissions, Want } from '@kit.AbilityKit';
+import { common, Want } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { AMapLocationManagerImpl } from '@amap/amap_lbs_location';
-import { AMapPrivacyAgreeStatus, AMapPrivacyInfoStatus, AMapPrivacyShowStatus } from '@amap/amap_lbs_common';
 import { call, observer } from '@kit.TelephonyKit';
 import { showDialogBottomList } from '@abner/dialog';
-import { GlobalThis } from '../entryability/GlobalThis';
-
 let globalContext: Context;
 /**
  * 接客地图
@@ -45,36 +41,79 @@ export struct PickUpMapView {
 
   async getTaskList(){
     const carId = MMKV.defaultMMKV().decodeString("CAR_ID") as string
+    console.log("car_id====>"+JSON.stringify(carId))
     LoadingUtils.showLoading("加载中...");
     let res = await Api.net().getOrderData(carId,this.ordersId["value1"],this.ordersId["value2"]);
     if (res.isSuccessWithData()) {
-      LoadingUtils.hideLoading();
       this.allOrderList =  res.data as AllOrderListModel
-      this.disposeOrderList = this.allOrderList.data
-      this.markerList = []
-      for (let i = 0; i < this.disposeOrderList.length; i++) {
-        const orderBean = this.disposeOrderList[i]
-        const marker = new MakerInfoModel()
-        marker.id = (i+1)
-        marker.orderId = orderBean.Id
-        marker.goTime = orderBean.GoTime
-        marker.name = orderBean.Name
-        marker.phone = orderBean.Phone
-        marker.num = '尾号：' + orderBean.Phone.substring(7, 11)
-        marker.time = orderBean.DayTime
-        marker.month = orderBean.GoTime.split(" ")[0]
-        marker.startLatLng = orderBean.StartLat + "," + orderBean.StartLng
-        marker.endLatLng = orderBean.EndLat + "," + orderBean.EndLng
-        marker.startAddress = orderBean.StartPlace
-        marker.endAddress = orderBean.EndPlace
-        this.markerList.push(marker)
+      if (this.allOrderList.statusCode == 200 ) {
+        LoadingUtils.hideLoading();
+        this.disposeOrderList = this.allOrderList.data
+        this.markerList = []
+        for (let i = 0; i < this.disposeOrderList.length; i++) {
+          const orderBean = this.disposeOrderList[i]
+          const marker = new MakerInfoModel()
+          marker.id = (i+1)
+          marker.orderId = orderBean.Id
+          marker.goTime = orderBean.GoTime
+          marker.name = orderBean.Name
+          marker.phone = orderBean.Phone
+          marker.num = '尾号：' + orderBean.Phone.substring(7, 11)
+          marker.time = orderBean.DayTime
+          marker.month = orderBean.GoTime.split(" ")[0]
+          marker.startLatLng = orderBean.StartLat + "," + orderBean.StartLng
+          marker.endLatLng = orderBean.EndLat + "," + orderBean.EndLng
+          marker.startAddress = orderBean.StartPlace
+          marker.endAddress = orderBean.EndPlace
+          this.markerList.push(marker)
+        }
+        console.log("打印封装marker信息集合===>"+JSON.stringify(this.markerList))
+        if (this.markerList.length > 0) {
+          let markerOptionsList: ArrayList<MarkerOptions> = new ArrayList<MarkerOptions>()
+          for (let i = 0; i < this.markerList.length; i++) {
+            let options1: MarkerOptions = new MarkerOptions()
+              .setPosition(new LatLng(parseFloat(this.markerList[i]?.startLatLng.split(",")[0]),
+                parseFloat(this.markerList[i]?.startLatLng.split(",")[1])))
+            let bitmapDes = await BitmapDescriptorFactory.fromView(() => {
+              this.customMarkerBuilder(this.markerList.length);
+            });
+            if (bitmapDes) {
+              options1.setIcon(bitmapDes);
+            }
+            options1.setTitle(this.markerList[i].name)
+            options1.setSnippet(this.markerList[i].num)
+            options1.setClickable(true)
+            markerOptionsList.add(options1);
+          }
+          // let marker1 = this.aMap.addMarkers(markerOptionsList, false);
+          let marker1  = this.aMap?.addMarkers(markerOptionsList, false);
+          //所有marker显示在当前页面的可视范围内
+          this.zoomToSpan()
+          // 初始化分组数据
+          let tempMap = new Map<string, Array<MakerInfoModel>>()
+          this.markerList.forEach(marker => {
+            // 使用相同的格式构建 key
+            const lat = parseFloat(marker.startLatLng.split(",")[0])
+            const lng = parseFloat(marker.startLatLng.split(",")[1])
+            const key = `${lat},${lng}`
+            if (!tempMap.has(key)) {
+              tempMap.set(key, [])
+            }
+            tempMap.get(key)?.push(marker)
+          })
+          this.groupedMarkers = tempMap
+          console.log("集合数据处理====>"+JSON.stringify(this.groupedMarkers))
+        }
+      }else{
+        LoadingUtils.hideLoading();
+        showToast(this.allOrderList.message)
       }
-      console.log("打印封装marker信息集合===>"+JSON.stringify(this.markerList))
     }else{
       LoadingUtils.hideLoading();
       showToast(res.message)
     }
   }
+
   private  zoomToSpan() {
     if (this.markerList.length > 0 && this.aMap) {
       for (let i = 0; i <this.markerList.length; i++) {
@@ -87,6 +126,9 @@ export struct PickUpMapView {
 
 
   private mapViewCreateCallback = (mapview?: MapView, mapViewName?: string) => {
+    // 等待数据加载完成
+    this.getTaskList()
+
     if (!mapview) {
       return;
     }
@@ -95,44 +137,43 @@ export struct PickUpMapView {
     this.mapView.getMapAsync(async (map) => {
       this.aMap = map;
       console.log("打印封装marker信息集合111===>" + JSON.stringify(this.markerList))
-      // 这里处理marker数据并展示
-      if (this.markerList.length > 0) {
-        let markerOptionsList: ArrayList<MarkerOptions> = new ArrayList<MarkerOptions>()
-        for (let i = 0; i < this.markerList.length; i++) {
-          let options1: MarkerOptions = new MarkerOptions()
-            .setPosition(new LatLng(parseFloat(this.markerList[i]?.startLatLng.split(",")[0]),
-              parseFloat(this.markerList[i]?.startLatLng.split(",")[1])))
-          // let bitmapDes = await BitmapDescriptorFactory.fromRawfilePath(globalContext, "custom_maker.png");
-          let bitmapDes = await BitmapDescriptorFactory.fromView(() => {
-            this.customMarkerBuilder(this.markerList.length);
-          });
-          if (bitmapDes) {
-            options1.setIcon(bitmapDes);
-          }
-          options1.setTitle(this.markerList[i].name)
-          options1.setSnippet(this.markerList[i].num)
-          options1.setClickable(true)
-          markerOptionsList.add(options1);
-        }
-        let marker1 = this.aMap.addMarkers(markerOptionsList, false);
-        //所有marker显示在当前页面的可视范围内
-        this.zoomToSpan()
-        // 初始化分组数据
-        let tempMap = new Map<string, Array<MakerInfoModel>>()
-        this.markerList.forEach(marker => {
-          // 使用相同的格式构建 key
-          const lat = parseFloat(marker.startLatLng.split(",")[0])
-          const lng = parseFloat(marker.startLatLng.split(",")[1])
-          const key = `${lat},${lng}`
-          if (!tempMap.has(key)) {
-            tempMap.set(key, [])
-          }
-          tempMap.get(key)?.push(marker)
-        })
-        this.groupedMarkers = tempMap
-        console.log("集合数据处理====>"+JSON.stringify(this.groupedMarkers))
-
-      }
+      // // 这里处理marker数据并展示
+      // if (this.markerList.length > 0) {
+      //   let markerOptionsList: ArrayList<MarkerOptions> = new ArrayList<MarkerOptions>()
+      //   for (let i = 0; i < this.markerList.length; i++) {
+      //     let options1: MarkerOptions = new MarkerOptions()
+      //       .setPosition(new LatLng(parseFloat(this.markerList[i]?.startLatLng.split(",")[0]),
+      //         parseFloat(this.markerList[i]?.startLatLng.split(",")[1])))
+      //     let bitmapDes = await BitmapDescriptorFactory.fromView(() => {
+      //       this.customMarkerBuilder(this.markerList.length);
+      //     });
+      //     if (bitmapDes) {
+      //       options1.setIcon(bitmapDes);
+      //     }
+      //     options1.setTitle(this.markerList[i].name)
+      //     options1.setSnippet(this.markerList[i].num)
+      //     options1.setClickable(true)
+      //     markerOptionsList.add(options1);
+      //   }
+      //   // let marker1 = this.aMap.addMarkers(markerOptionsList, false);
+      //   this.aMap.addMarkers(markerOptionsList, false);
+      //   //所有marker显示在当前页面的可视范围内
+      //   this.zoomToSpan()
+      //   // 初始化分组数据
+      //   let tempMap = new Map<string, Array<MakerInfoModel>>()
+      //   this.markerList.forEach(marker => {
+      //     // 使用相同的格式构建 key
+      //     const lat = parseFloat(marker.startLatLng.split(",")[0])
+      //     const lng = parseFloat(marker.startLatLng.split(",")[1])
+      //     const key = `${lat},${lng}`
+      //     if (!tempMap.has(key)) {
+      //       tempMap.set(key, [])
+      //     }
+      //     tempMap.get(key)?.push(marker)
+      //   })
+      //   this.groupedMarkers = tempMap
+      //   console.log("集合数据处理====>"+JSON.stringify(this.groupedMarkers))
+      // }
       //infoWindowAdapter
       this.aMap.setInfoWindowAdapter(()=>{
         this.customInfoWindowBuilder()
@@ -142,11 +183,11 @@ export struct PickUpMapView {
         //show
         (marker:BasePointOverlay)=>{
           const position = marker?.getPosition()
-          console.log("marker位置===>", JSON.stringify(position))
+          // console.log("marker位置===>", JSON.stringify(position))
           const key = `${position?.latitude},${position?.longitude}`
           const markers = this.groupedMarkers.get(key) || []
           this.markersList = markers
-          console.log("找到的markers数量===>", markers.length)
+          // console.log("找到的markers数量===>", markers.length)
         },
         //hide
         (marker :BasePointOverlay)=>{
@@ -155,7 +196,6 @@ export struct PickUpMapView {
       ));
       //marker点击事件
       this.aMap.setOnMarkerClickListener((marker: Marker): boolean => {
-        console.log("marker被点击===>")
         marker.showInfoWindow()
         return true
       });
@@ -166,18 +206,17 @@ export struct PickUpMapView {
 
 
   aboutToAppear(): void {
-    LoadingUtils.init(this.getUIContext());
+    globalContext = getContext().getApplicationContext();
+    MapsInitializer.setApiKey(CommonConstants.GAODE_KEY);
+    MapsInitializer.setDebugMode(true);
+    MapViewManager.getInstance().registerMapViewCreatedCallback(this.mapViewCreateCallback);
+    console.log("aboutToAppear----》"+"aboutToAppear")
+    // LoadingUtils.init(this.getUIContext());
     //本页面请求坐标集合
     this.ordersId =  router.getParams() as string
     console.log("页面传参1111==>"+JSON.stringify(this.ordersId))
-    // 等待数据加载完成
-    this.getTaskList()
 
 
-    globalContext = getContext().getApplicationContext();
-    MapsInitializer.setApiKey("2d92af4a266beadb78a91b4e6a828363");
-    MapsInitializer.setDebugMode(true);
-    MapViewManager.getInstance().registerMapViewCreatedCallback(this.mapViewCreateCallback);
   }
 
   aboutToDisappear(): void {
@@ -192,76 +231,11 @@ export struct PickUpMapView {
     }
   }
 
-  locationManger?: AMapLocationManagerImpl;
-  private context = getContext(this);
+  // locationManger?: AMapLocationManagerImpl;
+  // private context = getContext(this);
 
   onPageShow() {
-    //设置Key
-    AMapLocationManagerImpl.setApiKey("2d92af4a266beadb78a91b4e6a828363");
 
-    //初始化隐私政策
-    AMapLocationManagerImpl.updatePrivacyShow(AMapPrivacyShowStatus.DidShow, AMapPrivacyInfoStatus.DidContain, getContext(this))
-    AMapLocationManagerImpl.updatePrivacyAgree(AMapPrivacyAgreeStatus.DidAgree, getContext(this))
-    //创建AMapLocationManagerImpl
-    this.locationManger = new AMapLocationManagerImpl(this.context);
-
-  }
-  //权限请求
-  reqPermissionsFromUser(permissions: Array<Permissions>,address: string, latLng: string): void {
-    let context: Context = getContext(this) as common.UIAbilityContext;
-    let atManager: abilityAccessCtrl.AtManager = abilityAccessCtrl.createAtManager();
-    // requestPermissionsFromUser会判断权限的授权状态来决定是否唤起弹窗
-    atManager.requestPermissionsFromUser(context, permissions).then((data: PermissionRequestResult) => {
-      let grantStatus: Array<number> = data.authResults;
-      let length: number = grantStatus.length;
-      for (let i = 0; i < length; i++) {
-        if (grantStatus[i] === 0) {
-          // 用户授权，可以继续访问目标操作
-          showDialogBottomList({
-            items: ["高德地图", "华为地图"],
-            dialogAttribute: {
-              isSystemAnimation: false//取消系统的动画
-            },
-            itemDivider: {
-              height: 0.5
-            },
-            cancelAttr: {
-              paddingBottom: 20
-            },
-            itemClick: (position: number) => {
-              console.log("==========:" + position)
-              if (position == 0) {//高德地图
-                this.jumpToGaode(latLng.split(",")[1],latLng.split(",")[0],address)
-              }else if (position == 1){//华为地图
-                this.jumpToPetal(latLng.split(",")[1],latLng.split(",")[0],address)
-              }
-            }
-          })
-        } else {
-          // 用户拒绝授权，提示用户必须授权才能访问当前页面的功能，并引导用户到系统设置中打开相应的权限
-          this.openPermissionsInSystemSettings()
-          return;
-        }
-      }
-      // 授权成功
-    }).catch((err: BusinessError) => {
-      console.error(`Failed to request permissions from user. Code is ${err.code}, message is ${err.message}`);
-    })
-  }
-
-  openPermissionsInSystemSettings(): void {
-    let context: common.UIAbilityContext|undefined  = GlobalThis.getInstance().getContext('context');
-    let wantInfo: Want = {
-      action: 'action.settings.app.info',
-      parameters: {
-        settingsParamBundleName: 'com.example.myapplication' // 打开指定应用的详情页面
-      }
-    }
-    context?.startAbility(wantInfo).then(() => {
-      // ...
-    }).catch((err: BusinessError) => {
-      // ...
-    })
   }
 
 
@@ -396,10 +370,6 @@ export struct PickUpMapView {
   // 处理导航
   private handleNavigation(address: string, latLng: string) {
     // //获取权限
-    // this.reqPermissionsFromUser([
-    //   // 'ohos.permission.APPROXIMATELY_LOCATION',
-    //   'ohos.permission.LOCATION',
-    // ],address,latLng);
     showDialogBottomList({
       items: ["高德地图", "华为地图"],
       dialogAttribute: {
@@ -412,7 +382,6 @@ export struct PickUpMapView {
         paddingBottom: 20
       },
       itemClick: (position: number) => {
-        console.log("==========:" + position)
         if (position == 0) {//高德地图
           this.jumpToGaode(latLng.split(",")[0],latLng.split(",")[1],address)
         }else if (position == 1){//华为地图

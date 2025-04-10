@@ -24,7 +24,7 @@ struct Pages_WebView {
       // })
       //
       Web({
-        src: "https://testh5.hnxzkj.cn/otherPages/pages/rich-text/rich-text?code=UserPrivacyPolicy",
+        src: this.url,
         controller: this.controller})
         .javaScriptAccess(true)
         .domStorageAccess(true)

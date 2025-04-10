@@ -96,9 +96,9 @@
         "name": "EntryAbility",
         "srcEntry": "./ets/entryability/EntryAbility.ets",
         "description": "$string:EntryAbility_desc",
-        "icon": "$media:layered_image",
+        "icon": "$media:new_ic_app",//layered_image
         "label": "$string:EntryAbility_label",
-        "startWindowIcon": "$media:startIcon",
+        "startWindowIcon": "$media:new_ic_app",
         "startWindowBackground": "$color:start_window_background",
         "exported": true,
         "skills": [
@@ -107,7 +107,8 @@
               "entity.system.home"
             ],
             "actions": [
-              "action.system.home"
+              "action.system.home",
+              "wxentity.action.open"
             ]
           }
         ]
@@ -116,7 +117,11 @@
     "metadata": [
       {
         "name": "client_id",
-        "value": "6917565689896488657"  // 配置为获取的Client ID
+        "value": "6917569292450204100"  // 配置为获取的Client ID
+      },
+      {
+        "name": "GETUI_APPID",
+        "value": "25LlxBO9Tt6wDKRnd8K5X8"
       }
     ],
     "extensionAbilities": [
@@ -132,6 +137,11 @@
           }
         ]
       }
+    ],
+    "querySchemes": [
+      "weixin",
+      "wxopensdk",
+      "https"
     ]
   }
 }

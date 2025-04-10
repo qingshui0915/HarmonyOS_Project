@@ -1,6 +1,6 @@
 import { TitleBar } from '@smarthane/titlebar';
 import { router } from '@kit.ArkUI';
-import { Api, showToast } from 'base';
+import { Api, LoadingUtils, showToast } from 'base';
 import { BalanceRecordsModel, Item } from 'base/src/main/ets/viewmodel/BalanceRecordsModel';
 import { EmptyView } from '../view/EmptyView';
 
@@ -31,8 +31,8 @@ struct Pages_BalanceRecords {
 
   @Builder balanceRecordList(){
     Flex({ direction: FlexDirection.Column }) {
-
-      Text("当前余额：" + this.balanceRecordsList ?.data?.Item[0].NowMoney)
+      //this.balanceRecordsList ?.data?.Item[0]?.NowMoney
+      Text("当前余额：" + (this.balanceRecordsList ?.data?.Item ? "0" : this.balanceRecordsList ?.data?.Item[0]?.NowMoney))
         .fontColor($r("app.color.text_color1"))
         .fontSize(16)
         .width("100%")
@@ -98,14 +98,15 @@ struct Pages_BalanceRecords {
 
 
   async getBalanceRecordsList(){
-    this.showLoading = true;
+    LoadingUtils.showLoading('加载中...')
     let res = await Api.net().getBalanceRechargeRecord(this.index);
-    this.showLoading = false;
     console.log("余额记录数据====>"+JSON.stringify(res.data))
     if (res.isSuccessWithData()) { //200
+      LoadingUtils.hideLoading()
       this.balanceRecordsList = res.data as BalanceRecordsModel
     }else{
-
+      LoadingUtils.hideLoading()
+      showToast(res.message)
     }
   }
 

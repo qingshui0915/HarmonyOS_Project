@@ -196,6 +196,9 @@ struct Pages_TaskOrder {
   }
 
   onPageShow(): void {
+    console.log("Pages_TaskOrder===>"+"onPageShow")
+    this.getFlushedData()
+
     EventBus.listen<DeliverToPassengerModule>('DeliverToPassenger', (data) => {
       if (data !== undefined) {
         if (data.name == "送达乘客") {
@@ -214,6 +217,7 @@ struct Pages_TaskOrder {
 
 
   aboutToAppear(): void {
+    console.log("Pages_TaskOrder===>"+"aboutToAppear")
     const  topDate:string[] =  DateUtils.get7date("y/M/d")
     //拿到当前日期
     const nowDate  = DateUtils.formatDateWithLeadingZeros(DateUtils.getCurrentTime("yyyy-MM-dd"))

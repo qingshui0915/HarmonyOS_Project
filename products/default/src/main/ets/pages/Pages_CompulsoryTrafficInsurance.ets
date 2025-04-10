@@ -1,9 +1,18 @@
 import { TitleBar } from '@smarthane/titlebar';
 import { router } from '@kit.ArkUI';
-import { DateUtils, showToast } from 'base';
+import { Api, DateUtils, EventBus, LoadingUtils, NetConstants, showToast } from 'base';
 import { camera, cameraPicker } from '@kit.CameraKit';
 import { cameraSelect, fileSelect } from '../utils/Camerautils';
-
+import { hide, showDialogBottomList } from '@abner/dialog';
+import { SubmitTrafficInsuranceModel } from 'base/src/main/ets/viewmodel/SubmitTrafficInsuranceModel';
+import { BaseModel } from 'base/src/main/ets/viewmodel/BaseModel';
+import { JSON } from '@kit.ArkTS';
+import { InquireTrafficInsuranceModel } from 'base/src/main/ets/viewmodel/InquireTrafficInsuranceModel';
+import { MMKV } from '@tencent/mmkv';
+import { putObject } from '../utils/upload';
+interface SendFlushedModule {
+  name: string
+}
 /**
  *保险信息录入
  */
@@ -27,12 +36,22 @@ struct Pages_CompulsoryTrafficInsurance {
   @State deadlineOne :string =""
   @State deadlineTwo :string =""
   @State deadlineThree :string =""
-  @State startDate :string =""
+  @State startDateOne :string =""
+  //保险公司
   @State insuranceCompanyOne :string = ""
   @State insuranceCompanyTwo :string = ""
   @State insuranceCompanyThree :string = ""
+  //图片
+  @State insurancePhotoOne :string = ""  //图片1
+  @State insurancePhotoTwo :string = ""  //图片2
+  @State insurancePhotoThree :string = "" //图片3
+
+  @State submitTrafficInsurance:SubmitTrafficInsuranceModel = new SubmitTrafficInsuranceModel()
+  @State baseBean:BaseModel = new BaseModel()
+  @State inquireTrafficInsurance:InquireTrafficInsuranceModel = new InquireTrafficInsuranceModel();
 
   @State imageUri: Resource | string | undefined = undefined;
+
   private  cameraPosition: Array<camera.CameraPosition> = [
     camera.CameraPosition.CAMERA_POSITION_UNSPECIFIED, camera.CameraPosition.CAMERA_POSITION_BACK,
     camera.CameraPosition.CAMERA_POSITION_FRONT, camera.CameraPosition.CAMERA_POSITION_FOLD_INNER
@@ -41,15 +60,202 @@ struct Pages_CompulsoryTrafficInsurance {
     cameraPicker.PickerMediaType.PHOTO, cameraPicker.PickerMediaType.VIDEO
   ];
 
-  selectImage() {
+  //相册选择
+  selectImage(type:number) {
     fileSelect().then((uri: string) => {
-      this.imageUri = uri || '';
+      if (type == 1) {
+        this.imageUri = uri || '';
+        this.putObject(this.imageUri,1)
+        hide()
+      }else if (type == 2){
+        this.imageUri = uri || '';
+        // this.insurancePhotoTwo = this.imageUri
+        this.putObject(this.imageUri,2)
+        hide()
+      }else if (type == 3){
+        this.imageUri = uri || '';
+        // this.insurancePhotoThree = this.imageUri
+        this.putObject(this.imageUri,3)
+        hide()
+      }
+
     });
   }
-  openPhoto(){
+  //相机拍照
+  openPhotos(type:number){
     cameraSelect(this.cameraPosition,this.mediaType,getContext(this)).then((uri: string) => {
-      this.imageUri = uri || '';
+      if (type == 1) {
+        this.imageUri = uri || '';
+        this.putObject(this.imageUri,1)
+        hide()
+      }else if (type == 2){
+        this.imageUri = uri || '';
+        this.putObject(this.imageUri,2)
+        hide()
+      }else if (type == 3){
+        this.imageUri = uri || '';
+        this.putObject(this.imageUri,3)
+        hide()
+      }
     });
+  }
+
+  //默认进来查询数据->回显
+  async inquireTrafficInsuranceData(){
+    LoadingUtils.showLoading("加载中...")
+    let res = await Api.net().getDriverInfoByInsuranceInfo();
+    if (res.isSuccessWithData()) {
+      this.inquireTrafficInsurance = res.data as InquireTrafficInsuranceModel
+      // console.log("数据打印===>"+JSON.stringify(res.data))
+      if (this.inquireTrafficInsurance.statusCode == 200) {
+        LoadingUtils.hideLoading()
+        if (this.inquireTrafficInsurance.data.Info) {
+          //图片回显
+          this.insurancePhotoOne =this.inquireTrafficInsurance.data.Info.Clivtaphoto
+          this.insurancePhotoTwo =this.inquireTrafficInsurance.data.Info.VehicleInsurancePhoto
+          this.insurancePhotoThree =this.inquireTrafficInsurance.data.Info.CarriersInsurancePhoto
+          //开始时间回显
+          this.startDateOne = this.inquireTrafficInsurance.data.Info.ClivtaexpiryStartDate
+          //保险公司回显
+          this.insuranceCompanyOne = this.inquireTrafficInsurance.data.Info.ClivateCompany
+          this.insuranceCompanyTwo = this.inquireTrafficInsurance.data.Info.VehicleInsuranceCompany
+          this.insuranceCompanyThree = this.inquireTrafficInsurance.data.Info.InsureCompany
+          //截止时间回显
+          this.deadlineOne = this.inquireTrafficInsurance.data.Info.ClivtaexpiryDate
+          this.deadlineTwo = this.inquireTrafficInsurance.data.Info.VehicleInsuranceExpiryDate
+          this.deadlineThree = this.inquireTrafficInsurance.data.Info.CarriersInsuranceExpiryDate
+        }
+      }else{
+        LoadingUtils.hideLoading()
+        showToast(this.inquireTrafficInsurance.message)
+      }
+    }else{
+      LoadingUtils.hideLoading()
+      showToast(res.message)
+    }
+
+  }
+
+  //提交数据
+  async submitTrafficInsuranceData(){
+    //判断入参数据
+    if (!this.insuranceCompanyOne) {
+      showToast("请上传交强险图片信息")
+      return
+    }
+    if (!this.insuranceCompanyTwo) {
+      showToast("请上传责任险图片信息")
+      return
+    }
+    if (!this.insuranceCompanyThree) {
+      showToast("请上传商业险图片信息")
+      return
+    }
+    if (!this.startDateOne) {
+      showToast('请选择交强险有效期始时间')
+      return
+    }
+    if (!this.deadlineOne) {
+      showToast('请选择交强险有效期止时间')
+      return
+    }
+    if (!this.deadlineTwo) {
+      showToast('请选择责任险有效期止时间')
+      return
+    }
+    if (!this.deadlineThree) {
+      showToast('请选择商业险有效期止时间')
+      return
+    }
+    LoadingUtils.showLoading("加载中...")
+    this.submitTrafficInsurance.Clivtaphoto = this.insurancePhotoOne
+    this.submitTrafficInsurance.ClivateCompany = this.insuranceCompanyOne
+    this.submitTrafficInsurance.ClivtaexpiryStartDate = this.startDateOne
+    this.submitTrafficInsurance.ClivtaexpiryDate = this.deadlineOne
+    this.submitTrafficInsurance.VehicleInsurancePhoto = this.insurancePhotoTwo
+    this.submitTrafficInsurance.VehicleInsuranceCompany = this.insuranceCompanyTwo
+    this.submitTrafficInsurance.VehicleInsuranceExpiryDate = this.deadlineTwo
+    this.submitTrafficInsurance.CarriersInsurancePhoto = this.insurancePhotoThree
+    this.submitTrafficInsurance.InsureCompany = this.insuranceCompanyThree
+    this.submitTrafficInsurance.CarriersInsuranceExpiryDate = this.deadlineThree
+    console.log("打印提交数据JSON===>"+JSON.stringify(this.submitTrafficInsurance))
+    let res = await Api.net().postSaveDriverInfoByInsuranceInfo(this.submitTrafficInsurance);
+    if (res.isSuccessWithData()) { //200
+      if (res.data?.statusCode == 200) {
+        LoadingUtils.hideLoading()
+        showToast("保存成功")//Pages_SubmitForRevie
+        MMKV.defaultMMKV().encodeString("TARGET","Audit")
+        if (MMKV.defaultMMKV().decodeString('TARGET') === 'Audit') {
+          router.pushUrl({
+            url:'pages/Pages_SubmitForRevie'
+          })
+        }else{
+          let eventData: SendFlushedModule = {
+            name: '补齐证件',
+          }
+          EventBus.send('SendFlushedModule', eventData)
+          router.back()
+        }
+      }else{
+        LoadingUtils.hideLoading()
+        showToast(res.data?.message+"")
+      }
+    }else{
+      LoadingUtils.hideLoading()
+      showToast(res.message)
+    }
+
+  }
+
+
+  putObject = async (uri:string,type:number) =>{
+    let access_token:string = MMKV.defaultMMKV().decodeString("Token") || ""
+    if (access_token == "" || !access_token) {
+      access_token = ""
+    }
+    //获取文件名
+    const fileNameData = await Api.net().getOssFileNameRequest()
+    const name = fileNameData.data?.data
+    const fileName = `${name}.jpg`
+    const fileType = "image/jpeg"
+
+    //获取签名
+    const SignatureData = await Api.net().getOssParamRequest(fileName ,fileType)
+    const SignatureUrl = SignatureData.data?.data as string
+    if (type ==  1){
+      //上传
+      const result = await putObject(uri ,fileType ,SignatureUrl ,fileName)
+      const imageUrl = `${NetConstants.OSSPoint}/${fileName}`;
+      if (imageUrl) {
+        this.insurancePhotoOne = imageUrl
+      }
+      console.log(`图片地址 === ` + imageUrl)
+      console.log(`图片地址 === ` + JSON.stringify(result))
+    }else if (type == 2){
+      //上传
+      const result = await putObject(uri ,fileType ,SignatureUrl ,fileName)
+      const imageUrl = `${NetConstants.OSSPoint}/${fileName}`;
+      if (imageUrl) {
+        this.insurancePhotoTwo = imageUrl
+      }
+      console.log(`图片地址 === ` + imageUrl)
+      console.log(`图片地址 === ` + JSON.stringify(result))
+    }else if (type == 3){
+      //上传
+      const result = await putObject(uri ,fileType ,SignatureUrl ,fileName)
+      const imageUrl = `${NetConstants.OSSPoint}/${fileName}`;
+      if (imageUrl) {
+        this.insurancePhotoThree = imageUrl
+      }
+      console.log(`图片地址 === ` + imageUrl)
+      console.log(`图片地址 === ` + JSON.stringify(result))
+    }
+  }
+
+
+  aboutToAppear(): void {
+    //
+    this.inquireTrafficInsuranceData()
   }
 
 
@@ -87,32 +293,31 @@ struct Pages_CompulsoryTrafficInsurance {
               .padding(5)
 
               Row({ space: 10 }) {
-                Image("")
+                Image(this.insurancePhotoOne)
                   .alt($r('app.media.insurance'))
                   .layoutWeight(1)
+                  .height(160)
                   .onClick(()=>{
-                    ActionSheet.show({
-                      title: '',
-                      message: '',
-                      autoCancel: true,
-                      alignment: DialogAlignment.Bottom,
-                      offset: { dx: 0, dy: -10 },
-                      sheets: [
-                        {
-                          title: '拍照',
-                          action: () => {
-                            this.openPhoto()
-                            showToast("拍照")
-                          }
-                        },
-                        {
-                          title: '选择相册',
-                          action: () => {
-                            this.selectImage()
-                            showToast("选择相册")
-                          }
+                    showDialogBottomList({
+                      items: ["相机", "相册"],
+                      dialogAttribute: {
+                        isSystemAnimation: false//取消系统的动画
+                      },
+                      itemDivider: {
+                        height: 0.5
+                      },
+                      cancelAttr: {
+                        paddingBottom: 20
+                      },
+                      itemClick: (position: number) => {
+                        console.log("==========:" + position)
+                        if (position == 0) {//相机
+                          this.openPhotos(1)
+                        }else if (position == 1){//相册
+                          this.selectImage(1)
+
                         }
-                      ]
+                      }
                     })
                   })
               }
@@ -123,7 +328,6 @@ struct Pages_CompulsoryTrafficInsurance {
                 //保险公司
                 Row() {
                   Row({ space: 5 }) {
-
                     Text('保险公司')
                       .fontColor($r('app.color.text_color1'))
                       .fontSize(14)
@@ -164,7 +368,7 @@ struct Pages_CompulsoryTrafficInsurance {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.startDate ? this.startDate : "请选择")
+                    Text(this.startDateOne ? this.startDateOne : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -177,13 +381,13 @@ struct Pages_CompulsoryTrafficInsurance {
                   .layoutWeight(1)
                   .onClick(() => {
                     DatePickerDialog.show({
-                      start: new Date("2000-1-1"),
+                      start: new Date("1949-1-1"),
                       end: new Date("2100-12-31"),
                       selected: this.selectedStartDate,
                       onDateAccept: (value: Date) => {
                         //当弹窗再次弹出时显示选中的是上一次确定的日期
                         this.selectedStartDate = value
-                        this.startDate = DateUtils.formatDate(value,"yyyy-MM-dd")
+                        this.startDateOne = DateUtils.formatDate(value,"yyyy-MM-dd")
                       }
                     })
                   })
@@ -221,7 +425,7 @@ struct Pages_CompulsoryTrafficInsurance {
                   .alignItems(VerticalAlign.Center)
                   .onClick(() => {
                     DatePickerDialog.show({
-                      start: new Date("2000-1-1"),
+                      start: new Date("1949-1-1"),
                       end: new Date("2100-12-31"),
                       selected: this.selectedDateOne,
                       onDateAccept: (value: Date) => {
@@ -260,11 +464,31 @@ struct Pages_CompulsoryTrafficInsurance {
               .padding(5)
 
               Row({ space: 10 }) {
-                Image("")
+                Image(this.insurancePhotoTwo)
                   .alt($r('app.media.insurance1'))
                   .layoutWeight(1)
+                  .height(160)
                   .onClick(()=>{
-                    showToast("点击选择相册or拍照")
+                    showDialogBottomList({
+                      items: ["相机", "相册"],
+                      dialogAttribute: {
+                        isSystemAnimation: false//取消系统的动画
+                      },
+                      itemDivider: {
+                        height: 0.5
+                      },
+                      cancelAttr: {
+                        paddingBottom: 20
+                      },
+                      itemClick: (position: number) => {
+                        if (position == 0) {//相机
+                          this.openPhotos(2)
+                        }else if (position == 1){//相册
+                          this.selectImage(2)
+
+                        }
+                      }
+                    })
                   })
               }
               .padding(5)
@@ -327,7 +551,7 @@ struct Pages_CompulsoryTrafficInsurance {
                   .alignItems(VerticalAlign.Center)
                   .onClick(() => {
                     DatePickerDialog.show({
-                      start: new Date("2000-1-1"),
+                      start: new Date("1949-1-1"),
                       end: new Date("2100-12-31"),
                       selected: this.selectedDateTwo,
                       onDateAccept: (value: Date) => {
@@ -367,11 +591,32 @@ struct Pages_CompulsoryTrafficInsurance {
               .padding(5)
 
               Row({ space: 10 }) {
-                Image("")
+                Image(this.insurancePhotoThree)
                   .alt($r('app.media.insurance2'))
                   .layoutWeight(1)
+                  .height(160)
                   .onClick(()=>{
-                    // showToast("点击选择相册or拍照")
+                    showDialogBottomList({
+                      items: ["相机", "相册"],
+                      dialogAttribute: {
+                        isSystemAnimation: false//取消系统的动画
+                      },
+                      itemDivider: {
+                        height: 0.5
+                      },
+                      cancelAttr: {
+                        paddingBottom: 20
+                      },
+                      itemClick: (position: number) => {
+                        console.log("==========:" + position)
+                        if (position == 0) {//相机
+                          this.openPhotos(3)
+                        }else if (position == 1){//相册
+                          this.selectImage(3)
+
+                        }
+                      }
+                    })
                   })
               }
               .padding(5)
@@ -434,7 +679,7 @@ struct Pages_CompulsoryTrafficInsurance {
                   .alignItems(VerticalAlign.Center)
                   .onClick(() => {
                     DatePickerDialog.show({
-                      start: new Date("2000-1-1"),
+                      start: new Date("1949-1-1"),
                       end: new Date("2100-12-31"),
                       selected: this.selectedDateThree,
                       onDateAccept: (value: Date) => {
@@ -474,6 +719,9 @@ struct Pages_CompulsoryTrafficInsurance {
               .margin({ left: 30, right: 30, top: 25 ,bottom:20})
               .borderRadius(8)
               .backgroundColor($r('app.color.color_shubihong'))
+              .onClick(()=>{
+                this.submitTrafficInsuranceData()
+              })
           }
 
           // }

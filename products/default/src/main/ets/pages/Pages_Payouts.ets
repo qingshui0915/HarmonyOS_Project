@@ -1,9 +1,10 @@
 import { TitleBar } from '@smarthane/titlebar';
 import { router } from '@kit.ArkUI';
-import { Api } from 'base';
+import { Api, LoadingUtils } from 'base';
 import { Data, PayoutsTypeModel } from 'base/src/main/ets/viewmodel/PayoutsTypeModel';
 import { WeChatPayoutView } from '../view/WeChatPayoutView';
 import { ALiPayoutView } from '../view/ALiPayoutView';
+import { showToast } from '@abner/dialog';
 
 /**
  * 提现页面
@@ -25,6 +26,7 @@ struct Pages_Payouts {
   @State currentIndex: number = 0
   @State selectedIndex: number = 0
   private controller: TabsController = new TabsController()
+  @State type:number = 0
 
   @Builder TitleBars(){
     Column(){
@@ -76,11 +78,22 @@ struct Pages_Payouts {
 
   //请求
   async getPayoutsType(){
-    this.showLoading = true;
+    LoadingUtils.showLoading('加载中...')
     let res = await Api.net().getWithdrawType();
-    this.showLoading = false;
     console.log("余额提现数据====>"+JSON.stringify(res.data))
-    this.payoutsType = res.data as PayoutsTypeModel
+    if (res.isSuccessWithData()) {
+      this.payoutsType = res.data as PayoutsTypeModel
+      if (this.payoutsType.statusCode == 200) {
+        LoadingUtils.hideLoading()
+      }else{
+        LoadingUtils.hideLoading()
+        showToast(this.payoutsType.message)
+      }
+    }else{
+      LoadingUtils.hideLoading()
+      showToast(res.message)
+    }
+
   }
 
 

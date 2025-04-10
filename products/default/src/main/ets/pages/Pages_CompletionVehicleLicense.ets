@@ -2,8 +2,18 @@ import { TitleBar } from '@smarthane/titlebar';
 import { router } from '@kit.ArkUI';
 import { EnumScopeOfBusiness } from '../enum/EnumScopeOfBusiness';
 import { EnumOwnership } from '../enum/EnumOwnership';
-import { DateUtils } from 'base';
+import { Api, DateUtils, EventBus, LoadingUtils, NetConstants } from 'base';
+import { hide, showDialogBottomList, showToast } from '@abner/dialog';
+import { camera, cameraPicker } from '@kit.CameraKit';
+import { cameraSelect, fileSelect } from '../utils/Camerautils';
+import { InquireVehicleLicenseModel } from 'base/src/main/ets/viewmodel/InquireVehicleLicenseModel';
+import { SubmitVehicleLicenseModel } from 'base/src/main/ets/viewmodel/SubmitVehicleLicenseModel';
+import { MMKV } from '@tencent/mmkv';
+import { putObject } from '../utils/upload';
 
+interface SendFlushedModule {
+  name: string
+}
 /**
  *
  */
@@ -47,6 +57,61 @@ struct Pages_CompletionVehicleLicense {
   @State passengerTransportQualifications :string =""//是否具备客运资格-->赋值 提交时枚举转换类型
   @State qualificationCertificateExpirationDate :string =""//有效期止-->赋值
 
+  @State vehicleLicense_z_img :string =""
+  @State vehicleLicense_f_img :string =""
+
+  @State inquireVehicleLicense:InquireVehicleLicenseModel= new InquireVehicleLicenseModel()
+  @State submitVehicleLicense:SubmitVehicleLicenseModel= new SubmitVehicleLicenseModel()
+
+  @State imageUri: Resource | string | undefined = undefined;
+
+  private  cameraPosition: Array<camera.CameraPosition> = [
+    camera.CameraPosition.CAMERA_POSITION_UNSPECIFIED, camera.CameraPosition.CAMERA_POSITION_BACK,
+    camera.CameraPosition.CAMERA_POSITION_FRONT, camera.CameraPosition.CAMERA_POSITION_FOLD_INNER
+  ];
+
+  private  mediaType: Array<cameraPicker.PickerMediaType> = [
+    cameraPicker.PickerMediaType.PHOTO, cameraPicker.PickerMediaType.VIDEO
+  ];
+
+  //相册选择
+  selectImage(type:number) {
+    fileSelect().then((uri: string) => {
+      if (type == 1) {
+        this.imageUri = uri || '';
+        console.log("打印选取image===>"+JSON.stringify(this.imageUri))
+        // this.vehicleLicense_z_img = this.imageUri
+        this.putObject(this.imageUri,1)
+        hide()
+      }else if (type == 2){
+        this.imageUri = uri || '';
+        console.log("打印选取image===>"+JSON.stringify(this.imageUri))
+        // this.vehicleLicense_f_img = this.imageUri
+        this.putObject(this.imageUri,2)
+        hide()
+      }
+
+    });
+  }
+  //相机拍照
+  openPhotos(type:number){
+    cameraSelect(this.cameraPosition,this.mediaType,getContext(this)).then((uri: string) => {
+      if (type == 1) {
+        this.imageUri = uri || '';
+        console.log("打印拍照image===>"+JSON.stringify(this.imageUri))
+        // this.vehicleLicense_z_img = this.imageUri
+        this.putObject(this.imageUri,1)
+        hide()
+      }else if (type == 2){
+        this.imageUri = uri || '';
+        console.log("打印拍照image===>"+JSON.stringify(this.imageUri))
+        // this.vehicleLicense_f_img = this.imageUri
+        this.putObject(this.imageUri,2)
+        hide()
+      }
+
+    });
+  }
 
 
 
@@ -66,7 +131,185 @@ struct Pages_CompletionVehicleLicense {
     }
     console.log("222===>" + JSON.stringify(this.newEnumScopeOfBusiness))
     console.log("111===>" + JSON.stringify(this.newEnumOwnership))
+    //查询数据
+    this.inquireVehicleLicenseData()
   }
+
+  //查询数据回显
+  async inquireVehicleLicenseData(){
+    LoadingUtils.showLoading("加载中...")
+    let res = await Api.net().getDriverInfoByCarInfo();
+    if (res.isSuccessWithData()) {
+     this.inquireVehicleLicense =  res.data as InquireVehicleLicenseModel
+      if (this.inquireVehicleLicense.statusCode == 200) {
+        LoadingUtils.hideLoading()
+        if (this.inquireVehicleLicense.data.Info) {
+          //回显数据赋值
+          this.vehicleLicense_z_img = this.inquireVehicleLicense.data.Info?.TaxiLicensePhoto
+          this.vehicleLicense_f_img = this.inquireVehicleLicense.data.Info?.QualificationCertificatePhoto
+          this.vehicleLicenseQualificationNumber = this.inquireVehicleLicense.data.Info?.TransportCertsNumber
+          this.issuingAuthority = this.inquireVehicleLicense.data.Info?.TransportCertsOwner
+          this.areaCode = this.inquireVehicleLicense.data.Info?.TransportCertsIssuer
+          this.scopeOfBusiness= this.inquireVehicleLicense.data.Info?.BusinessScope
+          this.carSeats= (this.inquireVehicleLicense.data.Info?.Seats).toString()
+          this.markingTheGradeNumber= this.inquireVehicleLicense.data.Info?.SignsNmber
+          this.ownership= EnumOwnership.getNameByCode(this.inquireVehicleLicense.data.Info?.Ownership.toString())
+          this.vehicleTypeClass= this.inquireVehicleLicense.data.Info?.TypeLevel
+          this.signageDateStart= (this.inquireVehicleLicense.data.Info?.SignsDateStart).split(" ")[0]
+          this.signDateEnds= (this.inquireVehicleLicense.data.Info?.SignsDateEnd).split(" ")[0]
+          this.expirationDate= (this.inquireVehicleLicense.data.Info?.TaxiLicenseExpiryDate).split(" ")[0]
+          this.qualificationCertificate= this.inquireVehicleLicense.data.Info?.LicenseNumber
+          this.passengerTransportQualifications= this.inquireVehicleLicense.data.Info?.LicensePassengerTrans ? "是" :"否"
+          this.qualificationCertificateExpirationDate= (this.inquireVehicleLicense.data.Info?.QualificationCertificateExpiryDate).split(" ")[0]
+        }
+      }else{
+        LoadingUtils.hideLoading()
+        showToast(this.inquireVehicleLicense.message)
+      }
+    }else{
+      LoadingUtils.hideLoading()
+      showToast(res.message)
+    }
+  }
+
+
+  //提交数据
+  async submitVehicleLicenseData(){
+    //判断入参数据
+    if (!this.vehicleLicense_z_img) {
+      showToast("请上传营运证(车证)图片信息")
+      return
+    }
+    if ( !this.vehicleLicense_f_img ) {
+      showToast("请上传从业资格证(认证)图片信息")
+      return
+    }
+    if (!this.scopeOfBusiness ) {
+      showToast("请选择经营范围信息")
+      return
+    }
+    if ( !this.carSeats ) {
+      showToast("请填写车座位信息")
+      return
+    }
+    if (!this.markingTheGradeNumber) {
+      showToast("请填写标志牌号信息")
+      return
+    }
+    if (!this.ownership) {
+      showToast("请选择所有制信息")
+      return
+    }
+    if (!this.vehicleTypeClass) {
+      showToast("请填写车辆类型等级信息")
+      return
+    }
+    if (!this.signageDateStart ) {
+      showToast("请选择标志牌日期起信息")
+      return
+    }
+    if (!this.signDateEnds ) {
+      showToast("请选择标志牌日期止信息")
+      return
+    }
+    if (!this.expirationDate ) {
+      showToast("请选择营运证有效期止信息")
+      return
+    }
+    if (!this.qualificationCertificate ) {
+      showToast("请填写人证资格证号信息")
+      return
+    }
+    if (!this.passengerTransportQualifications) {
+      showToast("请选择客运资格信息")
+      return
+    }
+    if (!this.qualificationCertificateExpirationDate) {
+      showToast("请选择人证有效期止信息")
+      return
+    }
+    this.submitVehicleLicense.TaxiLicensePhoto = this.vehicleLicense_z_img
+    this.submitVehicleLicense.QualificationCertificatePhoto = this.vehicleLicense_f_img
+    this.submitVehicleLicense.TransportCertsNumber = this.vehicleLicenseQualificationNumber
+    this.submitVehicleLicense.TransportCertsOwner = this.issuingAuthority
+    this.submitVehicleLicense.TransportCertsIssuer = this.areaCode
+    this.submitVehicleLicense.BusinessScope = this.scopeOfBusiness
+    this.submitVehicleLicense.Seats = this.carSeats
+    this.submitVehicleLicense.SignsNmber = this.markingTheGradeNumber
+    this.submitVehicleLicense.Ownership = EnumOwnership.getCodeByName(this.ownership)
+    this.submitVehicleLicense.TypeLevel = this.vehicleTypeClass
+    this.submitVehicleLicense.SignsDateStart = this.signageDateStart
+    this.submitVehicleLicense.SignsDateEnd = this.signDateEnds
+    this.submitVehicleLicense.TaxiLicenseExpiryDate = this.expirationDate
+    this.submitVehicleLicense.LicenseNumber = this.qualificationCertificate
+    this.submitVehicleLicense.LicensePassengerTrans =  this.passengerTransportQualifications == "是" ? true : false
+    this.submitVehicleLicense.QualificationCertificateExpiryDate = this.qualificationCertificateExpirationDate
+    console.log("打印提交数据JSON===>"+JSON.stringify(this.submitVehicleLicense))
+    let res = await Api.net().postSaveDriverInfoByCarInfo(this.submitVehicleLicense);
+    if (res.isSuccessWithData()) { //200
+      if (res.data?.statusCode == 200) {
+        LoadingUtils.hideLoading()
+        showToast("保存成功")
+        //TODO:下一步操作 注册:next页面 补齐: finish 具体分析
+        if (MMKV.defaultMMKV().decodeString('TARGET') === 'Target') {
+          router.pushUrl({
+            url:'pages/Pages_CompulsoryTrafficInsurance'
+          })
+        }else{
+          let eventData: SendFlushedModule = {
+            name: '补齐证件',
+          }
+          EventBus.send('SendFlushedModule', eventData)
+          router.back()
+        }
+      }else{
+        LoadingUtils.hideLoading()
+        showToast(res.data?.message+"")
+      }
+    }else{
+      LoadingUtils.hideLoading()
+      showToast(res.message)
+    }
+
+  }
+
+  putObject = async (uri:string,type:number) =>{
+    let access_token:string = MMKV.defaultMMKV().decodeString("Token") || ""
+    if (access_token == "" || !access_token) {
+      access_token = ""
+    }
+    //获取文件名
+    const fileNameData = await Api.net().getOssFileNameRequest()
+    const name = fileNameData.data?.data
+    const fileName = `${name}.jpg`
+    const fileType = "image/jpeg"
+
+    //获取签名
+    const SignatureData = await Api.net().getOssParamRequest(fileName ,fileType)
+    const SignatureUrl = SignatureData.data?.data as string
+    if (type ==  1){
+      //上传
+      const result = await putObject(uri ,fileType ,SignatureUrl ,fileName)
+      const imageUrl = `${NetConstants.OSSPoint}/${fileName}`;
+      if (imageUrl) {
+        this.vehicleLicense_z_img = imageUrl
+      }
+      console.log(`图片地址 === ` + imageUrl)
+      console.log(`图片地址 === ` + JSON.stringify(result))
+    }else if (type == 2){
+      //上传
+      const result = await putObject(uri ,fileType ,SignatureUrl ,fileName)
+      const imageUrl = `${NetConstants.OSSPoint}/${fileName}`;
+      if (imageUrl) {
+        this.vehicleLicense_f_img = imageUrl
+      }
+      console.log(`图片地址 === ` + imageUrl)
+      console.log(`图片地址 === ` + JSON.stringify(result))
+    }
+  }
+
+
+
 
   build() {
     Flex({direction:FlexDirection.Column}) {
@@ -95,8 +338,32 @@ struct Pages_CompletionVehicleLicense {
               .padding(5)
 
               Row({ space: 10 }) {
-                Image($r('app.media.new_carcard'))
+                Image(this.vehicleLicense_z_img)
                   .layoutWeight(1)
+                  .alt($r('app.media.new_carcard'))
+                  .height(160)
+                  .onClick(()=>{
+                    showDialogBottomList({
+                      items: ["相机", "相册"],
+                      dialogAttribute: {
+                        isSystemAnimation: false//取消系统的动画
+                      },
+                      itemDivider: {
+                        height: 0.5
+                      },
+                      cancelAttr: {
+                        paddingBottom: 20
+                      },
+                      itemClick: (position: number) => {
+                        if (position == 0) {//相机
+                          this.openPhotos(1)
+                        }else if (position == 1){//相册
+                          this.selectImage(1)
+
+                        }
+                      }
+                    })
+                  })
               }
               .padding(5)
 
@@ -110,10 +377,9 @@ struct Pages_CompletionVehicleLicense {
                       .fontSize(14)
                   }
                   .margin({ left: 10 })
-                  .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入" ,text:this.vehicleLicenseQualificationNumber})
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -139,7 +405,6 @@ struct Pages_CompletionVehicleLicense {
                       .fontSize(14)
                   }
                   .margin({ left: 10 })
-                  .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
                   TextInput({ placeholder: "请输入" ,text: this.issuingAuthority? this.issuingAuthority :""})
@@ -168,7 +433,6 @@ struct Pages_CompletionVehicleLicense {
                       .fontSize(14)
                       .margin({left:5})
                   }
-                  .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
                   TextInput({ placeholder: "请输入",text:this.areaCode ? this.areaCode : "" })
@@ -282,7 +546,6 @@ struct Pages_CompletionVehicleLicense {
                       .fontSize(14)
                   }
                   .margin({left:10})
-                  .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
                   TextInput({ placeholder: "请输入" ,text:this.markingTheGradeNumber ?this.markingTheGradeNumber : ""})
@@ -453,7 +716,7 @@ struct Pages_CompletionVehicleLicense {
                   .layoutWeight(1)
                   .onClick(() => {
                     DatePickerDialog.show({
-                      start: new Date("2000-1-1"),
+                      start: new Date("1949-1-1"),
                       end: new Date("2100-12-31"),
                       selected: this.selectSignageEndDate,
                       onDateAccept: (value: Date) => {
@@ -497,7 +760,7 @@ struct Pages_CompletionVehicleLicense {
                   .alignItems(VerticalAlign.Center)
                   .onClick(() => {
                     DatePickerDialog.show({
-                      start: new Date("2000-1-1"),
+                      start: new Date("1949-1-1"),
                       end: new Date("2100-12-31"),
                       selected: this.selectExpirationDate,
                       onDateAccept: (value: Date) => {
@@ -536,8 +799,33 @@ struct Pages_CompletionVehicleLicense {
               .padding(5)
 
               Row({ space: 10 }) {
-                Image($r('app.media.new_carcard2'))
+                Image(this.vehicleLicense_f_img)
                   .layoutWeight(1)
+                  .height(160)
+                  .alt($r('app.media.new_carcard2'))
+                  .onClick(()=>{
+                    showDialogBottomList({
+                      items: ["相机", "相册"],
+                      dialogAttribute: {
+                        isSystemAnimation: false//取消系统的动画
+                      },
+                      itemDivider: {
+                        height: 0.5
+                      },
+                      cancelAttr: {
+                        paddingBottom: 20
+                      },
+                      itemClick: (position: number) => {
+                        console.log("==========:" + position)
+                        if (position == 0) {//相机
+                          this.openPhotos(2)
+                        }else if (position == 1){//相册
+                          this.selectImage(2)
+
+                        }
+                      }
+                    })
+                  })
               }
               .padding(5)
 
@@ -554,7 +842,6 @@ struct Pages_CompletionVehicleLicense {
                       .fontSize(14)
                   }
                   .margin({ left: 10 })
-                  .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
                   TextInput({ placeholder: "请输入",text:this.qualificationCertificate ? this.qualificationCertificate :"" })
@@ -647,7 +934,7 @@ struct Pages_CompletionVehicleLicense {
                   .alignItems(VerticalAlign.Center)
                   .onClick(() => {
                     DatePickerDialog.show({
-                      start: new Date("2000-1-1"),
+                      start: new Date("1949-1-1"),
                       end: new Date("2100-12-31"),
                       selected: this.selectExpiration_Date,
                       onDateAccept: (value: Date) => {
@@ -687,6 +974,10 @@ struct Pages_CompletionVehicleLicense {
               .margin({ left: 30, right: 30, top: 25 ,bottom:20})
               .borderRadius(8)
               .backgroundColor($r('app.color.color_shubihong'))
+              .onClick(()=>{
+                // showToast("点击提交数据")
+                this.submitVehicleLicenseData()
+              })
           }
 
           // }

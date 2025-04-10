@@ -29,6 +29,11 @@
     "pages/Pages_Scans",
     "pages/Page_Test",
     "pages/Pages_Select_Company",
-    "pages/Pages_IdCard"
+    "pages/Pages_IdCard",
+    "pages/Pages_BindWX",
+    "pages/Pages_WithdrawalHistory",
+    "pages/Pages_RevisePhoneNum",
+    "pages/Pages_SplashIndex",
+    "pages/Pages_AboutUs"
   ]
 }

@@ -24,7 +24,7 @@ export class EnumOwnership{
   }
 
   // 根据 code 获取 name
-  static getNameByCode(code: string): string | null {
+  static getNameByCode(code: string): string  {
     const values = [
       EnumOwnership.公车公营,
       EnumOwnership.承包经营,
@@ -34,7 +34,7 @@ export class EnumOwnership{
         return value.name;
       }
     }
-    return null; // 如果没有找到，返回 null 或者其他错误信息
+    return ""; // 如果没有找到，返回 null 或者其他错误信息
   }
 
   // 获取所有枚举值

@@ -1,8 +1,15 @@
 import { TitleBar } from '@smarthane/titlebar';
 import { router } from '@kit.ArkUI';
-import { MoneyListModel, MoneyModel } from '../viewmodel/MoneyModel';
-import { showToast } from 'base';
-import { JSON } from '@kit.ArkTS';
+import { MoneyModel } from '../viewmodel/MoneyModel';
+import { Api, LoadingUtils, showToast } from 'base';
+import { SubmitRechargeModel } from 'base/src/main/ets/viewmodel/SubmitRechargeModel';
+import { PayBackModel } from 'base/src/main/ets/viewmodel/PayBackModel';
+import { BaseModel } from 'base/src/main/ets/viewmodel/BaseModel';
+import { DriverUnifyPayModel } from 'base/src/main/ets/viewmodel/DriverUnifyPayModel';
+import * as wxopensdk from '@tencent/wechat_open_sdk';
+import { OnWXResp, WXApi, WXEventHandler } from '../model/WXApiWrap';
+import { common } from '@kit.AbilityKit';
+import json from '@ohos.util.json';
 
 /**
  * 充值页面
@@ -10,7 +17,13 @@ import { JSON } from '@kit.ArkTS';
 @Entry
 @Component
 struct Pages_Recharge {
-  @State message: string = 'Hello World';
+  private wxApi = WXApi
+  private wxEventHandler = WXEventHandler
+
+  @State payResultText: string = ''
+  private onWXResp: OnWXResp = (resp) => {
+    this.payResultText = JSON.stringify(resp ?? {}, null, 2)
+  }
   @State model1: TitleBar.Model = new TitleBar.Model()
     .setOnLeftClickListener(() => {
       router.back()
@@ -27,12 +40,113 @@ struct Pages_Recharge {
     new MoneyModel("10", "0")
   ];
   @State checkMoneyNum:string = ""
+  @State submitRecharge :SubmitRechargeModel = new SubmitRechargeModel()
+  @State payBack :PayBackModel = new PayBackModel()
+  @State driverUnifyPays :DriverUnifyPayModel = new DriverUnifyPayModel()
+  @State driverUnifyPayBack :BaseModel = new BaseModel()
+  @State submitInfo :Record<string,string> = {}
+  @State backServiceData :Record<string,string> = {}
 
   @Builder TitleBars(){
     Column(){
       TitleBar({ model: $model1 })
     }
   }
+
+  aboutToAppear(): void {
+    this.wxEventHandler.registerOnWXRespCallback(this.onWXResp)
+  }
+
+  aboutToDisappear(): void {
+    this.wxEventHandler.unregisterOnWXRespCallback(this.onWXResp)
+  }
+
+
+  async submitRecharges(){
+    LoadingUtils.showLoading("加载中...");
+    this.submitInfo = {
+      'recharge':this.checkMoneyNum
+    }
+    let res = await Api.net().submitRecharge(this.submitInfo);
+    if (res.isSuccessWithData()) { //200
+      this.submitRecharge = (res.data as SubmitRechargeModel)
+      if (this.submitRecharge.statusCode == 200) {
+        LoadingUtils.hideLoading();
+        // console.log("====>"+JSON.stringify(this.submitRecharge.data))
+        this.getDriverPayment(this.submitRecharge.data.OrderNo)
+      }
+
+    }else{
+      LoadingUtils.hideLoading();
+      showToast(res.message)
+    }
+  }
+
+  async getDriverPayment(orderNo:string){
+    LoadingUtils.showLoading("加载中...");
+    this.submitInfo = {
+      'orderNo':orderNo
+    }
+    let res = await Api.net().driverPaymentData(orderNo);
+    if (res.isSuccessWithData()) { //200
+      this.payBack = (res.data as PayBackModel)
+      if (this.payBack?.statusCode == 200) {
+        LoadingUtils.hideLoading();
+        this.getDriverUnifyPay(this.payBack?.data?.OrderNo,this.payBack?.data?.CouponId)
+      }
+    }else{
+      LoadingUtils.hideLoading();
+      showToast(res.message)
+    }
+  }
+
+  async getDriverUnifyPay(orderNo:string,couponId:string){
+    this.driverUnifyPays.OrderNo = orderNo
+    this.driverUnifyPays.CouponId = couponId
+    this.driverUnifyPays.PaymentType = 4
+    LoadingUtils.showLoading("加载中...");
+    let res = await Api.net().driverUnifyPay(this.driverUnifyPays);
+    if (res.isSuccessWithData()) { //200
+      this.driverUnifyPayBack = (res.data as BaseModel)
+      if (this.driverUnifyPayBack.statusCode == 200) {
+        LoadingUtils.hideLoading();
+        // console.log("====>" +JSON.stringify(this.driverUnifyPayBack))
+        this.backServiceData = json.parse(this.driverUnifyPayBack.data) as Record<string,string>
+        // console.log("11111====>" +JSON.stringify(this.backServiceData))
+        //调微信支付  根据上面的返回值填写下面的信息
+        let req = new wxopensdk.PayReq
+        req.partnerId = this.backServiceData?.partnerid
+        req.appId = this.backServiceData?.appid
+        req.packageValue = this.backServiceData?.package
+        req.prepayId = this.backServiceData?.prepayid
+        req.nonceStr = this.backServiceData?.noncestr
+        req.timeStamp = this.backServiceData?.timestamp
+        req.sign = this.backServiceData?.sign
+        req.extData = 'extData'
+
+        let finished = await this.wxApi.sendReq(getContext(this) as common.UIAbilityContext, req)
+        console.log("send request finished: ", finished)
+      }
+
+    }else{
+      LoadingUtils.hideLoading();
+      showToast(res.message)
+    }
+  }
+
+  //跳转隐私协议页面
+  openWebUrl(urlSuffix:string){
+    let url= "https://h5.hnxzkj.cn/"+urlSuffix;
+    router.pushUrl({
+      url: 'pages/Pages_WebView',
+      params:{
+        data1: 'message',
+        url: url  // 传递的 URL 参数
+      }
+    }, router.RouterMode.Single)
+  }
+
+
 
 
   build() {
@@ -60,7 +174,7 @@ struct Pages_Recharge {
                   // 切换选中状态
                   this.toggleSelection(index);
                   this.checkMoneyNum = this.moneyList[index].num
-                  showToast("点击切换选中金额"+JSON.stringify(this.checkMoneyNum));
+                  // showToast("点击切换选中金额"+JSON.stringify(this.checkMoneyNum));
                 });
             }
             .margin({ left: 10, right: 10 })
@@ -83,7 +197,7 @@ struct Pages_Recharge {
           .backgroundColor($r("app.color.color_shubihong"))
           .width("100%")
           .onClick(()=>{
-            showToast("拉起微信支付")
+            this.submitRecharges()
           })
       }
       .margin({top:20,left:15,right:15})
@@ -98,11 +212,11 @@ struct Pages_Recharge {
           .fontColor($r("app.color.color_shubihong"))
           .fontSize(12)
           .onClick(()=>{
-            showToast("点击查看规则")
+            this.openWebUrl("otherPages/pages/rich-text/rich-text?code=CustomDriverAppRechargeAgreeme")
           })
       }
       .width("90%")
-      .margin({left:15,right:15,top:5})
+      .margin({left:15,right:15,top:15})
       .alignItems(VerticalAlign.Center)
       .justifyContent(FlexAlign.Start)
 

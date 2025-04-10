@@ -1,25 +1,22 @@
 import { TitleBar } from '@smarthane/titlebar';
-import { Font, router } from '@kit.ArkUI';
-import { DateUtils, EventBus, showToast } from 'base';
-import { ArrayList, JSON } from '@kit.ArkTS';
-import { Type, plainToClass } from 'class-transformer'
-import "reflect-metadata"
+import {  router } from '@kit.ArkUI';
+import { Api, DateUtils, EventBus, LoadingUtils, NetConstants, showToast } from 'base';
+import { JSON } from '@kit.ArkTS';
 import { CallbackParam, CardRecognition, CardSide, CardType, ShootingMode } from '@kit.VisionKit';
+import { ImageFileNameModel } from 'base/src/main/ets/viewmodel/ImageFileNameModel';
+import { OSSPolicyTokenModel } from 'base/src/main/ets/viewmodel/OSSPolicyTokenModel';
+import { InquireIdCardModel } from 'base/src/main/ets/viewmodel/InquireIdCardModel';
+import { SubmitIdCardModel } from 'base/src/main/ets/viewmodel/SubmitIdCardModel';
+import { MMKV } from '@tencent/mmkv';
+import { putObject } from '../utils/upload';
 
 /**
  * IDCard 资料填写
  */
-interface PersonInfo {
-  name: string;
-  sex: string;
-  nationality: string;
-  address: string;
-  birth: string;
-  idNumber: string;
-  cardImageUri: string;
-  originalImageUri: string;
-  authority ?: string;
-  validPeriod ?: string;
+
+// 测试: eventBus 发送和接收的数据模型
+interface SendFlushedModule {
+  name: string
 }
 
 
@@ -45,12 +42,15 @@ struct Pages_CompletionIdCard {
   @State identificationNumber :string = "" //身份证号
   @State idCard_z_img :string = "" //身份证人像面
   @State idCard_f_img :string = "" //身份证国徽面
-  @State backEventData :PersonInfo[] = []
-  @State showCard :boolean =false
+  @State showFrontCard :boolean =false
+  @State showBackCard :boolean =false
   @State cardFrontData :Record<string, string> = {}
   @State cardBackData :Record<string, string> = {}
-
-
+  @State ossPolicyToken :OSSPolicyTokenModel = new OSSPolicyTokenModel()
+  @State imageFileName :ImageFileNameModel = new ImageFileNameModel()
+  @State inquireIdCard:InquireIdCardModel = new InquireIdCardModel()
+  @State submitIdCard:SubmitIdCardModel = new SubmitIdCardModel()
+  @State target:string = ""
 
   @Builder TitleBars(){
     Column(){
@@ -62,120 +62,163 @@ struct Pages_CompletionIdCard {
 
   onPageShow() :void {
     console.log("=====>onPageShow")
-
   }
+
+
 
 
   aboutToAppear(): void {
-    console.log("=====>onPageShow")
-    EventBus.listen<PersonInfo>('IDCardInfo', (data) => {
-      if (data !== undefined) {
-        console.log("====》"+data + "<====" +JSON.stringify(data))
-        this.userName = data.name
-        // for (let i = 0; i < data.length; i++) {
-        //   if (i == 0) {
-        //     this.userName = `${data[i].name}`
-        //   }
-        // }
-        // let tmpStr: Record<string, string>[] = JSON.parse(JSON.stringify(data)) as Record<string, string>[];
-        // const arrayList: ArrayList<string> = new ArrayList();
-        // Object.entries(tmpStr).forEach((item) => {
-        //   const value = item[1];
-        //   arrayList.add(value);
-        // })
-        //
-        // console.log("=====>"+JSON.stringify(arrayList))
-        // this.backEventData = data as Record<string, string>[]
-        // console.log("页面返回打印数据====>"+JSON.stringify(this.backEventData))
-        // this.backEventData.forEach((cardData :Record<string, string>)=>{
-        //   this.userName = `${cardData.name}`
-        // })
-        // console.log("页面返回打印数据====>"+JSON.stringify(data))
-        // console.log("页面返回打印数据====>"+JSON.stringify(data[0]))
-        // const s  =  JSON.parse(data  as Record<string, string>[])
-        // // 解析身份证正面信息
-        // if (data.length > 0 && data[0]) {
-        //   // JSON.parse()
-        //   typeof data
-        //   const frontData = data[0]
-        //   this.userName = frontData['name'] || ""
-        //   this.gender = frontData['sex'] || ""
-        //   this.ethnicGroup = frontData['nationality'] || ""
-        //
-        //   // 处理出生日期格式
-        //   if (frontData['birth']) {
-        //     // 将"1990年6月11日"转换为"1990/06/11"格式
-        //     const birthMatch = frontData['birth'].match(/(\d{4})年(\d{1,2})月(\d{1,2})日/)
-        //     if (birthMatch) {
-        //       const year = birthMatch[1]
-        //       const month = birthMatch[2].padStart(2, '0')
-        //       const day = birthMatch[3].padStart(2, '0')
-        //       this.brithDate = `${year}/${month}/${day}`
-        //       // 更新日期选择器的日期
-        //       this.selectBirthDate = new Date(`${year}/${month}/${day}`)
-        //     }
-        //   }
-        //   this.idCard_z_img = frontData['cardImageUri']
-        //
-        //   this.identificationNumber = frontData['idNumber'] || ""
-        // }
-        //
-        // // 解析身份证背面信息
-        // if (data.length > 1 && data[1]) {
-        //   const backData = data[1]
-        //   this.issuingAuthority = backData['authority'] || ""
-        //   this.idCard_f_img = backData['cardImageUri']
-        //   // 处理有效期限
-        //   if (backData['validPeriod']) {
-        //     // 例如："2023.07.07-长期"
-        //     const periodParts = backData['validPeriod'].split('-')
-        //     if (periodParts.length > 0) {
-        //       const startDateStr = periodParts[0].trim()
-        //       // 将"2023.07.07"转换为"2023-07-07"格式
-        //       const dateParts = startDateStr.split('.')
-        //       if (dateParts.length === 3) {
-        //         const year = dateParts[0]
-        //         const month = dateParts[1]
-        //         const day = dateParts[2]
-        //
-        //         // 如果是"长期"，可以设置一个较远的日期，如20年后
-        //         if (periodParts[1] && periodParts[1].trim() === "长期") {
-        //           const endDate = new Date(`${year}/${month}/${day}`)
-        //           endDate.setFullYear(endDate.getFullYear() + 50)
-        //           this.deadline = DateUtils.formatDate(endDate, "yyyy/MM/dd")
-        //           // this.selectedDate = endDate
-        //         }
-        //       }
-        //     }
-        //   }
-        // }
-
-        console.log("更新后的数据=====>", JSON.stringify({
-          userName: this.userName,
-          gender: this.gender,
-          ethnicGroup: this.ethnicGroup,
-          brithDate: this.brithDate,
-          identificationNumber: this.identificationNumber,
-          issuingAuthority: this.issuingAuthority,
-          deadline: this.deadline
-        }))
-      }
-    })
+    this.target = router.getParams() as string
+    console.log("hhhh===>"+JSON.stringify(this.target))
+    MMKV.defaultMMKV().encodeString("TARGET",this.target['value'])
+    //默认进来查询回显
+      this.InquireIdCardData()
   }
-  //默认进来查询
-  async inquireIdCardData(){
 
+  //查询驾驶证信息数据->回显
+  async InquireIdCardData(){
+    LoadingUtils.showLoading("加载中...")
+    let res = await Api.net().getDriverInfoByIdCard()
+    if (res.isSuccessWithData()) {
+      this.inquireIdCard =  res.data as InquireIdCardModel
+      if (this.inquireIdCard.statusCode == 200) {
+        LoadingUtils.hideLoading()
+        if (this.inquireIdCard.data.Info) {
+          //回显数据赋值
+          this.idCard_z_img = this.inquireIdCard.data.Info.IdCardUrl
+          this.idCard_f_img = this.inquireIdCard.data.Info.IdCardPersonUrl
+
+          this.userName = this.inquireIdCard.data.Info.Name
+          this.gender = this.inquireIdCard.data.Info.Gender
+          this.ethnicGroup = this.inquireIdCard.data.Info.Nation
+          this.brithDate = this.inquireIdCard.data.Info.Birthday
+          this.issuingAuthority = this.inquireIdCard.data.Info.IdcardSignsBy
+          this.identificationNumber = this.inquireIdCard.data.Info.IdCardNo
+          this.deadline = (this.inquireIdCard.data.Info.IdCardExpiryDate).split(" ")[0]
+        }
+      }else{
+        LoadingUtils.hideLoading()
+        showToast(this.inquireIdCard.message)
+      }
+    }else{
+      LoadingUtils.hideLoading()
+      showToast(res.message)
+    }
   }
 
   //提交数据
   async submitIdCardData(){
-    //判断入参数据
+    //判断入参数据this.idCard_z_img
+    if (!this.idCard_z_img) {
+      showToast("请上传人面像图片信息")
+      return
+    }
+    if (!this.idCard_f_img) {
+      showToast("请上传国徽面图片信息")
+      return
+    }
+    if (!this.userName) {
+      showToast("请填写姓名信息")
+      return
+    }
+    if (!this.gender) {
+      showToast("请填写性别信息")
+      return
+    }
+    if (!this.ethnicGroup) {
+      showToast("请填写民族信息")
+      return
+    }
+    if (!this.brithDate) {
+      showToast("请填写出生日期信息")
+      return
+    }
+    if (!this.issuingAuthority) {
+      showToast("请填写签发机关信息")
+      return
+    }
+    if (!this.identificationNumber) {
+      showToast("请填写身份证号信息")
+      return
+    }
+    if (!this.deadline) {
+      showToast("请填写身份证有效截止时间信息")
+      return
+    }
+    LoadingUtils.showLoading("加载中...")
+    this.submitIdCard.IdCardUrl = this.idCard_z_img
+    this.submitIdCard.IdCardPersonUrl = this.idCard_f_img
+    this.submitIdCard.Name = this.userName
+    this.submitIdCard.Gender = this.gender
+    this.submitIdCard.Nation = this.ethnicGroup
+    this.submitIdCard.Birthday = this.brithDate
+    this.submitIdCard.IdcardSignsBy = this.issuingAuthority
+    this.submitIdCard.IdCardNo = this.identificationNumber
+    this.submitIdCard.IdCardExpiryDate = this.deadline
+    console.log("打印提交数据JSON===>"+JSON.stringify(this.submitIdCard))
+    let res = await Api.net().postSaveDriverInfoByIdCard(this.submitIdCard);
+    if (res.isSuccessWithData()) { //200
+      if (res.data?.statusCode == 200) {
+        LoadingUtils.hideLoading()
+        showToast("保存成功")
+        //TODO:下一步操作 注册:next页面 补齐: finish 具体分析
+        if (MMKV.defaultMMKV().decodeString('TARGET') === 'Target') {
+          router.pushUrl({
+            url:'pages/Pages_CompletionDriverCard'
+          })
+        }else{
+          //测试发送事件
+          let eventData: SendFlushedModule = {
+            name: '补齐证件',
+          }
+          EventBus.send('SendFlushedModule', eventData)
+          router.back()
+        }
 
-
+      }else{
+        LoadingUtils.hideLoading()
+        showToast(res.data?.message+"")
+      }
+    }else{
+      LoadingUtils.hideLoading()
+      showToast(res.message)
+    }
   }
 
+  putObject = async (uri:string,type:number) =>{
+    let access_token:string = MMKV.defaultMMKV().decodeString("Token") || ""
+    if (access_token == "" || !access_token) {
+      access_token = ""
+    }
+    //获取文件名
+    const fileNameData = await Api.net().getOssFileNameRequest()
+    const name = fileNameData.data?.data
+    const fileName = `${name}.jpg`
+    const fileType = "image/jpeg"
 
-
+    //获取签名
+    const SignatureData = await Api.net().getOssParamRequest(fileName ,fileType)
+    const SignatureUrl = SignatureData.data?.data as string
+    if (type ==  1){
+      //上传
+      const result = await putObject(uri ,fileType ,SignatureUrl ,fileName)
+      const imageUrl = `${NetConstants.OSSPoint}/${fileName}`;
+      if (imageUrl) {
+        this.idCard_z_img = imageUrl
+      }
+      console.log(`图片地址 === ` + imageUrl)
+      console.log(`图片地址 === ` + JSON.stringify(result))
+    }else if (type == 2){
+      //上传
+      const result = await putObject(uri ,fileType ,SignatureUrl ,fileName)
+      const imageUrl = `${NetConstants.OSSPoint}/${fileName}`;
+      if (imageUrl) {
+        this.idCard_f_img = imageUrl
+      }
+      console.log(`图片地址 === ` + imageUrl)
+      console.log(`图片地址 === ` + JSON.stringify(result))
+    }
+  }
 
 
 
@@ -213,17 +256,13 @@ struct Pages_CompletionIdCard {
                   .layoutWeight(1)
                   .alt($r('app.media.card_z'))
                   .onClick(()=>{
-                    // showToast("点击选择相册or拍照")
-                    this.showCard = true
-                    // router.pushUrl({
-                    //   url:'pages/Pages_IdCard'
-                    // })
+                    this.showFrontCard = true
                   })
                 Image(this.idCard_f_img)
                   .layoutWeight(1)
                   .alt($r('app.media.card_f'))
                   .onClick(()=>{
-                    showToast("点击选择相册or拍照")
+                    this.showBackCard = true
                   })
               }
               .padding(5)
@@ -412,7 +451,6 @@ struct Pages_CompletionIdCard {
                       .fontSize(14)
                   }
                   .margin({left:10})
-                  .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
                   TextInput({placeholder:"请输入",text:this.identificationNumber})
@@ -504,11 +542,11 @@ struct Pages_CompletionIdCard {
         }
       }
 
-      if (this.showCard){
+      if (this.showFrontCard){
         CardRecognition({
           // 此处选择身份证类型作为示例
           supportType: CardType.CARD_ID,
-          cardSide: CardSide.DEFAULT,
+          cardSide: CardSide.FRONT,
           cardRecognitionConfig: {
             defaultShootingMode: ShootingMode.MANUAL,
             isPhotoSelectionSupported: true
@@ -516,16 +554,84 @@ struct Pages_CompletionIdCard {
           callback: ((params: CallbackParam) => {
             if (params.code === -1) {
               // this.pathStack.pop()
+            }else if(params.code === 200){
+              if (params.cardInfo?.front !== undefined) {
+                this.cardFrontData = params.cardInfo?.front
+                this.userName = this.cardFrontData.name
+                  this.gender = this.cardFrontData.sex
+                  this.ethnicGroup = this.cardFrontData.nationality
+                  // 处理出生日期格式
+                  if (this.cardFrontData.birth) {
+                    // 将"1990年6月11日"转换为"1990/06/11"格式
+                    const birthMatch = this.cardFrontData.birth.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/)
+                    if (birthMatch) {
+                      const year = birthMatch[1]
+                      const month = birthMatch[2].padStart(2, '0')
+                      const day = birthMatch[3].padStart(2, '0')
+                      this.brithDate = `${year}/${month}/${day}`
+                      // 更新日期选择器的日期
+                      this.selectBirthDate = new Date(`${year}/${month}/${day}`)
+                    }
+                  }
+                  this.idCard_z_img = this.cardFrontData.cardImageUri
+                if (this.idCard_z_img) {
+                    //这里请求OSS
+                  this.putObject(this.idCard_z_img,1)
+                }
+                  this.identificationNumber = this.cardFrontData.idNumber
+              }
             }
-            if (params.cardInfo?.front !== undefined) {
-              this.cardFrontData = params.cardInfo?.front
-              this.userName = this.cardFrontData.name
-            }
+            this.showFrontCard = false
+          })
+        })
+      }
 
-            if (params.cardInfo?.back !== undefined) {
-              this.cardBackData = params.cardInfo?.back
+      if (this.showBackCard){
+        CardRecognition({
+          // 此处选择身份证类型作为示例
+          supportType: CardType.CARD_ID,
+          cardSide: CardSide.BACK,
+          cardRecognitionConfig: {
+            defaultShootingMode: ShootingMode.MANUAL,
+            isPhotoSelectionSupported: true
+          },
+          callback: ((params: CallbackParam) => {
+            if (params.code === -1) {
+              // this.pathStack.pop()
+            }else if(params.code === 200){
+              if (params.cardInfo?.back !== undefined) {
+                this.cardBackData = params.cardInfo?.back
+                this.issuingAuthority = this.cardBackData.authority
+                this.idCard_f_img = this.cardBackData.cardImageUri
+                if (this.idCard_f_img) {
+                  //这里请求OSS
+                  this.putObject(this.idCard_f_img,2)
+                }
+                // 处理有效期限
+                if (this.cardBackData.validPeriod) {
+                  // 例如："2023.07.07-长期"
+                  const periodParts = this.cardBackData.validPeriod.split('-')
+                  if (periodParts.length > 0) {
+                    const startDateStr = periodParts[0].trim()
+                    // 将"2023.07.07"转换为"2023-07-07"格式
+                    const dateParts = startDateStr.split('.')
+                    if (dateParts.length === 3) {
+                      const year = dateParts[0]
+                      const month = dateParts[1]
+                      const day = dateParts[2]
+                      // 如果是"长期"，可以设置一个较远的日期，如20年后
+                      if (periodParts[1] && periodParts[1].trim() === "长期") {
+                        const endDate = new Date(`${year}/${month}/${day}`)
+                        endDate.setFullYear(endDate.getFullYear() + 50)
+                        this.deadline = DateUtils.formatDate(endDate, "yyyy/MM/dd")
+                        // this.selectedDate = endDate
+                      }
+                    }
+                  }
+                }
+              }
             }
-            this.showCard = false
+            this.showBackCard = false
           })
         })
       }

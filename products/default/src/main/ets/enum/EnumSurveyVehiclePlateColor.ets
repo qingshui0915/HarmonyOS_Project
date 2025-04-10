@@ -40,7 +40,7 @@ export class EnumSurveyVehiclePlateColor {
   }
 
   // 根据 code 获取 name
-  static getNameByCode(code: string): string | null {
+  static getNameByCode(code: string): string  {
     const values = [
       EnumSurveyVehiclePlateColor.蓝色,
       EnumSurveyVehiclePlateColor.黄色,
@@ -58,7 +58,7 @@ export class EnumSurveyVehiclePlateColor {
         return value.name;
       }
     }
-    return null; // 如果没有找到，返回 null 或者其他错误信息
+    return ""; // 如果没有找到，返回 null 或者其他错误信息
   }
 
   // 获取所有枚举值

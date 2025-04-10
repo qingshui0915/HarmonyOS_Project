@@ -48,7 +48,7 @@ export class EnumTypeOfEnergy {
   }
 
   // 根据 code 获取 name
-  static getNameByCode(code: string): string | null {
+  static getNameByCode(code: string): string  {
     const values = [
       EnumTypeOfEnergy.汽油,
       EnumTypeOfEnergy.柴油,
@@ -70,7 +70,7 @@ export class EnumTypeOfEnergy {
         return value.name;
       }
     }
-    return null; // 如果没有找到，返回 null 或者其他错误信息
+    return ""; // 如果没有找到，返回 null 或者其他错误信息
   }
 
   // 获取所有枚举值

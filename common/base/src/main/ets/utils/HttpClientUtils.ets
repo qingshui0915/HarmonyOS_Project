@@ -68,7 +68,7 @@ export async function requestSync<T>(path: string, method: http.RequestMethod, m
     }
 
     let httpRequest = http.createHttp();
-    hilog.info(0, NetConstants.NET_TAG, `start request, path: ${path}, method: ${method}, extraData: ` + JSON.stringify(extraData));
+    hilog.info(0, NetConstants.NET_TAG, `//=========HTTP====>, path: ${path}, method: ${method}, extraData: ` + JSON.stringify(extraData));
     httpRequest.request(url, {
       method: method,
       expectDataType: http.HttpDataType.OBJECT,
@@ -82,12 +82,12 @@ export async function requestSync<T>(path: string, method: http.RequestMethod, m
         } else {
           res.data = data.result as T;
         }
-        hilog.info(0, NetConstants.NET_TAG, `request success, path: ${path}, result: ${JSON.stringify(res)}`);
+        hilog.info(0, NetConstants.NET_TAG, `//=========HTTP_request====>, path: ${path}, result: ${JSON.stringify(res)}`);
         resolve(res);  // 成功情况下直接返回
         return;  // 添加return避免继续执行
       }
       // 处理错误情况
-      hilog.error(0, NetConstants.NET_TAG, `request error, path: ${path}, error: ${JSON.stringify(err)}`);
+      hilog.error(0, NetConstants.NET_TAG, `//=========HTTP_request_error====>, path: ${path}, error: ${JSON.stringify(err)}`);
       if (data?.responseCode === 401 || err?.message?.includes('Unauthorized')) {
         try {
           const newToken = await refreshToken();

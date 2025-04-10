@@ -1,8 +1,20 @@
 import { TitleBar } from '@smarthane/titlebar';
 import { router } from '@kit.ArkUI';
-import { DateUtils, showToast } from 'base';
+import { Api, DateUtils, EventBus, LoadingUtils, NetConstants, showToast } from 'base';
 import { EnumSurveyVehiclePlateColor } from '../enum/EnumSurveyVehiclePlateColor';
 import { EnumTypeOfEnergy } from '../enum/EnumTypeOfEnergy';
+import { CallbackParam, CardRecognition, CardSide, CardType, ShootingMode } from '@kit.VisionKit';
+import { hide, showDialogBottomList } from '@abner/dialog';
+import { camera, cameraPicker } from '@kit.CameraKit';
+import { cameraSelect, fileSelect } from '../utils/Camerautils';
+import { InquireTravelCardModel } from 'base/src/main/ets/viewmodel/InquireTravelCardModel';
+import { SubmitTravelCardModel } from 'base/src/main/ets/viewmodel/SubmitTravelCardModel';
+import { MMKV } from '@tencent/mmkv';
+import { putObject } from '../utils/upload';
+
+interface SendFlushedModule {
+  name: string
+}
 
 @Entry
 @Component
@@ -38,8 +50,60 @@ struct Pages_CompletionTravelCard {
   @State Annual_Review_Date :string = "" //年审日期
   @State expirationDate :string = "" //过期日期 -->赋值
   @State expiration_Date :string = "" //过期日期
+  @State showFrontCard :boolean =false
+  @State travelCard_z_img :string =""
+  @State travelCard_f_img :string =""
+  @State personCarGroupPhoto :string =""
+  @State travelCardFrontData :Record<string, string> = {}
+  @State inquireTravelCard:InquireTravelCardModel = new InquireTravelCardModel()
+  @State submitTravelCard:SubmitTravelCardModel = new SubmitTravelCardModel()
 
+  @State imageUri: Resource | string | undefined = undefined;
+  private  cameraPosition: Array<camera.CameraPosition> = [
+    camera.CameraPosition.CAMERA_POSITION_UNSPECIFIED, camera.CameraPosition.CAMERA_POSITION_BACK,
+    camera.CameraPosition.CAMERA_POSITION_FRONT, camera.CameraPosition.CAMERA_POSITION_FOLD_INNER
+  ];
+  private  mediaType: Array<cameraPicker.PickerMediaType> = [
+    cameraPicker.PickerMediaType.PHOTO, cameraPicker.PickerMediaType.VIDEO
+  ];
 
+  selectImage(type:number) {
+    fileSelect().then((uri: string) => {
+      if (type == 1) {
+        this.imageUri = uri || '';
+        console.log("打印选取image===>"+JSON.stringify(this.imageUri))
+        this.travelCard_f_img = this.imageUri
+        this.putObject(this.travelCard_f_img,2)
+        hide()
+      }else if (type == 2){
+        this.imageUri = uri || '';
+        console.log("打印选取image===>"+JSON.stringify(this.imageUri))
+        this.personCarGroupPhoto = this.imageUri
+        this.putObject(this.personCarGroupPhoto,3)
+        hide()
+      }
+
+    });
+  }
+  //
+  openPhotos(type:number){
+    cameraSelect(this.cameraPosition,this.mediaType,getContext(this)).then((uri: string) => {
+      if (type == 1) {
+        this.imageUri = uri || '';
+        console.log("打印拍照image===>"+JSON.stringify(this.imageUri))
+        this.travelCard_f_img = this.imageUri
+        this.putObject(this.travelCard_f_img,2)
+        hide()
+      }else if (type == 2){
+        this.imageUri = uri || '';
+        console.log("打印拍照image===>"+JSON.stringify(this.imageUri))
+        this.personCarGroupPhoto = this.imageUri
+        this.putObject(this.personCarGroupPhoto,3)
+        hide()
+      }
+
+    });
+  }
 
   @Builder TitleBars(){
     Column(){
@@ -50,8 +114,6 @@ struct Pages_CompletionTravelCard {
 
 
   aboutToAppear(): void {
-    // console.log("22222==>"+JSON.stringify(EnumSurveyVehiclePlateColorHelper.values()))
-    // console.log("22222==>"+JSON.stringify(this.EnumPlateColor))
     for (let index = 0; index < this.EnumPlateColor.length; index++) {
       this.newEnumPlateColor[index] = this.EnumPlateColor[index].name
     }
@@ -61,9 +123,180 @@ struct Pages_CompletionTravelCard {
     }
     console.log("33333==>"+JSON.stringify(this.newEnumPlateColor))
     console.log("44444==>"+JSON.stringify(this.newEnumTypeOfEnergy))
+    //查询数据
+    this.inquireTravelCardData()
+  }
+
+  //查询行驶证信息数据->回显
+  async inquireTravelCardData(){
+    LoadingUtils.showLoading("加载中...")
+    let res = await Api.net().getDriverInfoDrivingLicense();
+    if (res.isSuccessWithData()) {
+      this.inquireTravelCard =  res.data as InquireTravelCardModel
+      if (this.inquireTravelCard.statusCode == 200) {
+        LoadingUtils.hideLoading()
+        if (this.inquireTravelCard.data.Info) {
+          //回显数据赋值
+          this.travelCard_z_img = this.inquireTravelCard.data.Info?.VehicleCardPageUrl
+          this.travelCard_f_img = this.inquireTravelCard.data.Info?.VehicleCardSidePageUrl
+          this.personCarGroupPhoto = this.inquireTravelCard.data.Info?.VehiclePictureUrl
+          this.licensePlateNumber = this.inquireTravelCard.data.Info?.CarNumber
+          this.bodyColor = this.inquireTravelCard.data.Info?.Color
+          this.licensePlateColor =  EnumSurveyVehiclePlateColor.getNameByCode(this.inquireTravelCard.data.Info?.PlateColor.toString())
+          this.vehicleModel = this.inquireTravelCard.data.Info?.MotorcycleType
+          this.vehicleBrand = this.inquireTravelCard.data.Info?.Brand
+          this.typeOfEnergy =  EnumTypeOfEnergy.getNameByCode(this.inquireTravelCard.data.Info?.EnergyType.toString())
+          this.registrationDate = (this.inquireTravelCard.data.Info?.LicenseRegDate).split(" ")[0]
+          this.AnnualReviewDate = (this.inquireTravelCard.data.Info?.InspectAnnuallyDate).split(" ")[0]
+          this.expirationDate = (this.inquireTravelCard.data.Info?.VehicleCardExpiryDate).split(" ")[0]
+        }
+      }else{
+        LoadingUtils.hideLoading()
+        showToast(this.inquireTravelCard.message)
+      }
+    }else{
+      LoadingUtils.hideLoading()
+      showToast(res.message)
+    }
   }
 
 
+  //填写信息数据提交
+  async submitTravelCardData(){
+    if (!this.travelCard_z_img) {
+      showToast("请上传行驶证图片信息")
+      return
+    }
+    if (!this.travelCard_f_img) {
+      showToast("请上传行驶证副页图片信息")
+      return
+    }
+    if (!this.personCarGroupPhoto) {
+      showToast("请上传车辆图片信息")
+      return
+    }
+    if (!this.licensePlateNumber) {
+      showToast("请填写车牌号信息")
+      return
+    }
+    if (!this.bodyColor) {
+      showToast("请填写车身颜色信息")
+      return
+    }
+    if (!this.licensePlateColor) {
+      showToast("请填写车牌颜色信息")
+      return
+    }
+    if (!this.vehicleModel) {
+      showToast("请填写车辆型号信息")
+      return
+    }
+    if (!this.vehicleBrand) {
+      showToast("请填写车辆品牌信息")
+      return
+    }
+    if (!this.typeOfEnergy) {
+      showToast("请填写能源类型信息")
+      return
+    }
+    if (!this.registrationDate) {
+      showToast("请填写车辆注册日期信息")
+      return
+    }
+    if (!this.AnnualReviewDate) {
+      showToast("请填写年审日期信息")
+      return
+    }
+    if (!this.expirationDate) {
+      showToast("请填写过期信息")
+      return
+    }
+    LoadingUtils.showLoading("加载中...")
+    this.submitTravelCard.VehicleCardPageUrl = this.travelCard_z_img
+    this.submitTravelCard.VehicleCardSidePageUrl = this.travelCard_f_img
+    this.submitTravelCard.VehiclePictureUrl = this.personCarGroupPhoto
+    this.submitTravelCard.CarNumber = this.licensePlateNumber
+    this.submitTravelCard.Color = this.bodyColor
+    this.submitTravelCard.PlateColor = this.licensePlateColor
+    this.submitTravelCard.MotorcycleType = this.vehicleModel
+    this.submitTravelCard.Brand = this.vehicleBrand
+    this.submitTravelCard.EnergyType = this.typeOfEnergy
+    this.submitTravelCard.LicenseRegDate = this.registrationDate
+    this.submitTravelCard.InspectAnnuallyDate = this.AnnualReviewDate
+    this.submitTravelCard.VehicleCardExpiryDate = this.expirationDate
+    console.log("打印提交数据JSON===>"+JSON.stringify(this.submitTravelCard))
+    let res = await Api.net().postSaveDriverInfoByDrivingLicense(this.submitTravelCard);
+    if (res.isSuccessWithData()) { //200
+      if (res.data?.statusCode == 200) {
+        LoadingUtils.hideLoading()
+        showToast("保存成功")
+        //TODO:下一步操作 注册:next页面 补齐: finish 具体分析
+        if (MMKV.defaultMMKV().decodeString('TARGET') === 'Target') {
+          router.pushUrl({
+            url:'pages/Pages_CompletionVehicleLicense'
+          })
+        }else{
+          let eventData: SendFlushedModule = {
+            name: '补齐证件',
+          }
+          EventBus.send('SendFlushedModule', eventData)
+          router.back()
+        }
+      }else{
+        LoadingUtils.hideLoading()
+        showToast(res.data?.message+"")
+      }
+    }else{
+      LoadingUtils.hideLoading()
+      showToast(res.message)
+    }
+
+  }
+
+
+  putObject = async (uri:string,type:number) =>{
+    let access_token:string = MMKV.defaultMMKV().decodeString("Token") || ""
+    if (access_token == "" || !access_token) {
+      access_token = ""
+    }
+    //获取文件名
+    const fileNameData = await Api.net().getOssFileNameRequest()
+    const name = fileNameData.data?.data
+    const fileName = `${name}.jpg`
+    const fileType = "image/jpeg"
+
+    //获取签名
+    const SignatureData = await Api.net().getOssParamRequest(fileName ,fileType)
+    const SignatureUrl = SignatureData.data?.data as string
+    if (type ==  1){
+      //上传
+      const result = await putObject(uri ,fileType ,SignatureUrl ,fileName)
+      const imageUrl = `${NetConstants.OSSPoint}/${fileName}`;
+      if (imageUrl) {
+        this.travelCard_z_img = imageUrl
+      }
+      console.log(`图片地址 === ` + imageUrl)
+      console.log(`图片地址 === ` + JSON.stringify(result))
+    }else if (type == 2){
+      //上传
+      const result = await putObject(uri ,fileType ,SignatureUrl ,fileName)
+      const imageUrl = `${NetConstants.OSSPoint}/${fileName}`;
+      if (imageUrl) {
+        this.travelCard_f_img = imageUrl
+      }
+      console.log(`图片地址 === ` + imageUrl)
+      console.log(`图片地址 === ` + JSON.stringify(result))
+    }else if (type == 3){
+      //上传
+      const result = await putObject(uri ,fileType ,SignatureUrl ,fileName)
+      const imageUrl = `${NetConstants.OSSPoint}/${fileName}`;
+      if (imageUrl) {
+        this.personCarGroupPhoto = imageUrl
+      }
+      console.log(`图片地址 === ` + imageUrl)
+      console.log(`图片地址 === ` + JSON.stringify(result))
+    }
+  }
 
   build() {
     Flex({direction:FlexDirection.Column}) {
@@ -95,17 +328,39 @@ struct Pages_CompletionTravelCard {
               .padding(5)
 
               Row({ space: 10 }) {
-                Image("")
-                  .layoutWeight(1)
+                Image(this.travelCard_z_img)
+                  .width(150)
+                  .height(83)
                   .alt($r('app.media.travel'))
                   .onClick(()=>{
-                    showToast("点击拍照或者打开相册")
+                    this.showFrontCard = true
                   })
-                Image("")
-                  .layoutWeight(1)
+                Image(this.travelCard_f_img)
+                  .width(155)
+                  .height(83)
                   .alt($r('app.media.travelcard_f'))
                   .onClick(()=>{
-                    showToast("点击拍照或者打开相册")
+                    showDialogBottomList({
+                      items: ["相机", "相册"],
+                      dialogAttribute: {
+                        isSystemAnimation: false//取消系统的动画
+                      },
+                      itemDivider: {
+                        height: 0.5
+                      },
+                      cancelAttr: {
+                        paddingBottom: 20
+                      },
+                      itemClick: (position: number) => {
+                        console.log("==========:" + position)
+                        if (position == 0) {//相机
+                          this.openPhotos(1)
+                        }else if (position == 1){//相册
+                          this.selectImage(1)
+
+                        }
+                      }
+                    })
                   })
               }
               .padding(5)
@@ -125,11 +380,32 @@ struct Pages_CompletionTravelCard {
               .margin({ top: 5 })
 
               Row({ space: 10 }) {
-                Image("")
-                  .layoutWeight(1)
+                Image(this.personCarGroupPhoto)
+                  .width(160)
+                  .height(86)
                   .alt($r('app.media.car_photo_icon'))
                   .onClick(()=>{
-                    showToast("点击拍照或者打开相册")
+                    showDialogBottomList({
+                      items: ["相机", "相册"],
+                      dialogAttribute: {
+                        isSystemAnimation: false//取消系统的动画
+                      },
+                      itemDivider: {
+                        height: 0.5
+                      },
+                      cancelAttr: {
+                        paddingBottom: 20
+                      },
+                      itemClick: (position: number) => {
+                        console.log("==========:" + position)
+                        if (position == 0) {//相机
+                          this.openPhotos(2)
+                        }else if (position == 1){//相册
+                          this.selectImage(2)
+
+                        }
+                      }
+                    })
                   })
                 Image($r('app.media.card_f'))
                   .visibility(Visibility.Hidden)
@@ -185,7 +461,7 @@ struct Pages_CompletionTravelCard {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入" ,text:this.bodyColor})
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -264,7 +540,7 @@ struct Pages_CompletionTravelCard {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入",text:this.vehicleModel})
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -297,7 +573,7 @@ struct Pages_CompletionTravelCard {
                   .layoutWeight(1)
                   .alignItems(VerticalAlign.Center)
 
-                  TextInput({ placeholder: "请输入" })
+                  TextInput({ placeholder: "请输入" ,text:this.vehicleBrand})
                     .placeholderFont({ size: 13 })
                     .type(InputType.Normal)
                     .backgroundColor(Color.Transparent)
@@ -377,7 +653,7 @@ struct Pages_CompletionTravelCard {
                   .alignItems(VerticalAlign.Center)
 
                   Row({ space: 3 }) {
-                    Text(this.registration_Date ? this.registration_Date : "请选择")
+                    Text(this.registrationDate ? this.registrationDate : "请选择")
                       .fontColor($r('app.color.text_h1'))
                       .fontSize(13)
                     Image($r('app.media.arrow_bottom'))
@@ -523,6 +799,9 @@ struct Pages_CompletionTravelCard {
               .margin({ left: 30, right: 30, top: 25 ,bottom:20})
               .borderRadius(8)
               .backgroundColor($r('app.color.color_shubihong'))
+              .onClick(()=>{
+                this.submitTravelCardData()
+              })
           }
 
           // }
@@ -534,6 +813,44 @@ struct Pages_CompletionTravelCard {
       }
       .width('100%')
       .height('100%')
+
+      if (this.showFrontCard){
+        // 行驶证
+        CardRecognition({
+          supportType: CardType.CARD_VEHICLE_LICENSE,
+          // 行驶证可双面识别
+          cardSide: CardSide.FRONT,
+          cardRecognitionConfig: {
+            defaultShootingMode: ShootingMode.MANUAL,
+            isPhotoSelectionSupported: true
+          },
+          callback: ((params: CallbackParam) => {
+            if (params.code == 200) {
+              console.log("行驶证信息返回=====>"+JSON.stringify(params.cardInfo?.front))
+              if (params.cardInfo?.front !== undefined) {
+                this.travelCardFrontData = params.cardInfo?.front
+                this.licensePlateNumber = this.travelCardFrontData.licensePlateNumber
+                this.vehicleModel = this.travelCardFrontData.model
+                this.travelCard_z_img = this.travelCardFrontData.cardImageUri
+                if (this.travelCard_z_img){
+                  this.putObject(this.travelCard_z_img,1)
+                }
+                if (this.travelCardFrontData.registerDate) {//车辆注册日期
+                  const dateParts = this.travelCardFrontData.registerDate.split('-')
+                  if (dateParts.length === 3) {
+                    const year = dateParts[0]
+                    const month = dateParts[1]
+                    const day = dateParts[2]
+                    const newStartDate = new Date(`${year}/${month}/${day}`)
+                    this.registrationDate = DateUtils.formatDate(newStartDate, "yyyy/MM/dd")
+                    this.AnnualReviewDate = DateUtils.formatDate(newStartDate, "yyyy/MM/dd")
+                  }
+                }
+              }
+            }
+          })
+        })
+      }
 
     }
     .height('100%')
